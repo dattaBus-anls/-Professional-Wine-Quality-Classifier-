@@ -99,7 +99,7 @@ All visualizations are generated and saved in the `images/` folder during model 
 ---
 
 
-## 👨‍💻 Author
+## 👨‍💻 Student 
 
 **Apu Datta**  
 MSBA, Baruch College (CUNY)  
