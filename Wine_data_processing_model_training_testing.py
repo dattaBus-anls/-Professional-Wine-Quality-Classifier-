@@ -33,6 +33,7 @@ import time
 import pickle
 import os
 warnings.filterwarnings('ignore')
+import shutil
 
 """# 2. Dataset Loading"""
 
@@ -285,6 +286,9 @@ plt.xticks(rotation=45, ha='right', fontsize=8)
 plt.yticks(rotation=0, fontsize=8)
 plt.title('Feature Correlation Matrix', fontsize=14, fontweight='bold', pad=20)
 
+plt.savefig('models/correlation_heatmap.png', dpi=300, bbox_inches='tight', facecolor='white')
+print("✅ Saved: models/correlation_heatmap.png")
+
 # Visualization 3: Alcohol vs Volatile Acidity scatter plot
 plt.subplot(1, 3, 3)
 colors = ['red', 'blue', 'green', 'orange']
@@ -298,7 +302,16 @@ plt.ylabel('Volatile Acidity', fontsize=12)
 plt.title('Alcohol vs Volatile Acidity by Quality', fontsize=14, pad=20)
 plt.legend()
 
+plt.savefig('models/alcohol_vs_volatile.png', dpi=300, bbox_inches='tight', facecolor='white')
+print("✅ Saved: models/alcohol_vs_volatile.png")
+
 plt.tight_layout(pad=3.0)
+plt.show()
+
+## checking line for PNG
+plt.tight_layout(pad=3.0)
+plt.savefig('models/main_overview.png', dpi=300, bbox_inches='tight', facecolor='white')
+print("✅ Saved: models/main_overview.png")
 plt.show()
 
 print("="*60)
@@ -587,8 +600,15 @@ plt.axvline(x=optimal_k, color='green', linestyle='--', label=f'Optimal k = {opt
 plt.xlabel('Number of Neighbors (k)')
 plt.ylabel('Accuracy')
 plt.title('KNN Validation Curve: Finding Optimal k')
+
+# plt.legend()
+# plt.grid(True, alpha=0.3)
+# plt.show()
+
 plt.legend()
 plt.grid(True, alpha=0.3)
+plt.savefig('models/knn_validation_curve.png', dpi=300, bbox_inches='tight', facecolor='white')
+print("✅ Saved: models/knn_validation_curve.png")
 plt.show()
 
 # Additional analysis: Different distance metrics for optimal k
@@ -667,8 +687,16 @@ plt.xlabel('Models')
 plt.ylabel('Cross Validation Accuracy')
 plt.title('5-Fold Cross Validation Results')
 plt.xticks(range(len(model_names)), model_names, rotation=45, ha='right')
+
+
+# plt.grid(True, alpha=0.3)
+# plt.tight_layout()
+# plt.show()
+
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
+plt.savefig('models/cv_results.png', dpi=300, bbox_inches='tight', facecolor='white')
+print("✅ Saved: models/cv_results.png")
 plt.show()
 
 """# 14. Model Training and Testing"""
@@ -825,6 +853,8 @@ ax2.set_ylabel('Fit Time (seconds)', color='green')
 ax2.tick_params(axis='y', labelcolor='green')
 
 plt.tight_layout()
+plt.savefig('models/kmeans_elbow.png', dpi=300, bbox_inches='tight', facecolor='white')
+print("✅ Saved: models/kmeans_elbow.png")
 plt.show()
 
 """# 19. K-MEANS Model Evaluation"""
@@ -881,8 +911,16 @@ sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
             xticklabels=label_encoder.classes_,
             yticklabels=label_encoder.classes_)
 plt.title(f'Confusion Matrix - {best_model_name}')
+
+
+# plt.xlabel('Predicted')
+# plt.ylabel('Actual')
+# plt.show()
+
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
+plt.savefig('models/confusion_matrix.png', dpi=300, bbox_inches='tight', facecolor='white')
+print("✅ Saved: models/confusion_matrix.png")
 plt.show()
 
 """# 22. Feature Importance Analysis"""
@@ -911,6 +949,8 @@ if 'Random Forest' in trained_models:
     plt.ylabel('Importance')
     plt.xticks(rotation=45)
     plt.tight_layout()
+    plt.savefig('models/feature_importance.png', dpi=300, bbox_inches='tight', facecolor='white')
+    print("✅ Saved: models/feature_importance.png")
     plt.show()
 
 """# 23. Comprehensive Analysis Summary"""
@@ -1129,5 +1169,55 @@ print("✅ requirements.txt downloaded!")
 
 print("="*60)
 print("🚀 Deploymnet Pckages are ready!")
+print("="*60)
+
+"""# 26. Downloading all .png files for craeting a readme.md  """
+
+"""# 26. Download PNG Files for README"""
+
+print("="*60)
+print("DOWNLOADING PNG FILES FOR README")
+print("="*60)
+
+from google.colab import files
+import os
+
+# List of PNG files that should exist
+png_files = [
+    'models/target_distribution_pie.png',
+    'models/correlation_heatmap.png',
+    'models/alcohol_vs_volatile.png',
+    'models/main_overview_plots.png',
+    'models/feature_distributions.png',
+    'models/knn_validation_curve.png',
+    'models/cv_results.png',
+    'models/performance_metrics.png',
+    'models/kmeans_elbow.png',
+    'models/confusion_matrix.png',
+    'models/feature_importance.png'
+]
+
+print("📂 Checking for PNG files...")
+existing_files = []
+
+for png_file in png_files:
+    if os.path.exists(png_file):
+        existing_files.append(png_file)
+        file_size = os.path.getsize(png_file)
+        print(f"✅ Found: {png_file} ({file_size:,} bytes)")
+    else:
+        print(f"❌ Missing: {png_file}")
+
+# Download existing files
+if existing_files:
+    print(f"\n⬇️ Starting download of {len(existing_files)} PNG files...")
+    for png_file in existing_files:
+        print(f"Downloading {png_file}...")
+        files.download(png_file)
+        print(f"✅ Downloaded!")
+    print(f"\n🎉 Successfully downloaded {len(existing_files)} PNG files!")
+else:
+    print("\n❌ No PNG files found to download!")
+
 print("="*60)
 

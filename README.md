@@ -1,76 +1,114 @@
+# 🍷 Wine Quality Classifier (Streamlit App)
 
-# 🍷 Wine Quality Classification - Project Overview
-
-This project builds a classification pipeline to predict wine quality categories based on physicochemical properties.
-
----
-
-## 📊 Model Evaluation & Visualizations
-
-### 1. Validation Curve – KNN
-![Validation Curve](images/cv_accuracy.png)
-
-### 2. Overall Model Metrics
-![Model Metrics](images/model_metrics.png)
-
-### 3. K-Means Elbow Method
-![Elbow Method](images/kmeans_elbow.png)
-
-### 4. Feature Importance
-![Feature Importance](images/feature_importance.png)
-
-### 5. Confusion Matrix
-![Confusion Matrix](images/confusion_matrix.png)
-
-### 6. Correlation Heatmap
-![Correlation Heatmap](images/correlation_heatmap.png)
-
-### 7. Alcohol vs Volatile Acidity
-![Alcohol vs Volatile Acidity](images/alcohol_vs_volatile.png)
+A professional Streamlit-based machine learning app that predicts the quality of wine (Poor, Average, Good) using physicochemical properties like acidity, sugar, sulfur dioxide, alcohol, and more. Trained on the combined red and white wine dataset from Kaggle.
 
 ---
 
-## 🛠️ Technologies Used
+## 🚀 Key Features
 
-- Python (pandas, numpy, matplotlib, seaborn, scikit-learn)
-- Streamlit for deployment
-- Pickle for model serialization
+- 🔮 Predicts wine quality using user inputs  
+- 📊 Uses trained model (e.g., Random Forest, KNN)  
+- 🎯 12+ chemical features (e.g., pH, alcohol, residual sugar)  
+- 📈 Performance dashboard with CV scores  
+- 📦 Modular pipeline: model, scaler, encoders, metadata  
 
 ---
 
-## 📁 Files and Structure
+## 🧠 ML Workflow
+
+| Step              | Method / Tool                  |
+|-------------------|-------------------------------|
+| Data Cleaning     | Imputation, Label Encoding     |
+| Models Used       | Logistic, KNN, SVM, RF, etc.   |
+| Tuning            | Optimal K selection for KNN    |
+| Evaluation        | Accuracy, CV, Confusion Matrix |
+| Deployment        | Streamlit App                  |
+
+---
+
+## 📁 Folder Structure
 
 ```
-├── wine_model.pkl
-├── wine_scaler.pkl
-├── wine_streamlit_app.py
+📦 project/
+├── wine_streamlit_app.py       # Streamlit UI
+├── Wine_data_processing_model_training_testing.py
+├── *.pkl                       # Trained model files
 ├── requirements.txt
-├── images/
-│   ├── cv_accuracy.png
-│   ├── model_metrics.png
-│   ├── kmeans_elbow.png
-│   ├── feature_importance.png
-│   ├── confusion_matrix.png
-│   ├── correlation_heatmap.png
-│   ├── alcohol_vs_volatile.png
+└── README.md
 ```
 
 ---
 
-## 🚀 How to Run
+## ▶️ Run Locally
 
-1. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-2. Launch the Streamlit app:
-   ```
-   streamlit run wine_streamlit_app.py
-   ```
+```bash
+pip install -r requirements.txt
+streamlit run wine_streamlit_app.py
+```
 
 ---
 
-## 📬 Contact
+## 🌐 Deploy to Streamlit Cloud
 
-For questions or contributions, please contact [Your Name] at [your-email@example.com].
+1. Push to GitHub  
+2. Go to [streamlit.io/cloud](https://streamlit.io/cloud)  
+3. Set main file: `wine_streamlit_app.py`  
+4. Click “Deploy” 🚀  
+
+---
+
+## 📚 Dataset
+
+- 📊 Source: [Kaggle Wine Quality](https://www.kaggle.com/datasets/rajyellow46/wine-quality)  
+- ✅ 6,497 combined samples (Red + White)  
+- 🎯 Target: Wine Quality → Categorized into `Poor`, `Average`, `Good`  
+
+---
+
+## 📸 Visualizations
+
+All visualizations are generated and saved in the `models/` folder during model training and evaluation.
+
+| 📂 File Name                  | 🧪 Description                                           |
+|------------------------------|----------------------------------------------------------|
+| `target_distribution_pie.png`| Pie chart showing distribution of wine quality categories |
+| `correlation_heatmap.png`    | Feature correlation heatmap to detect multicollinearity  |
+| `alcohol_vs_volatile.png`    | Scatterplot of Alcohol vs. Volatile Acidity              |
+| `feature_importance.png`     | Feature importance chart from Random Forest model        |
+| `confusion_matrix.png`       | Confusion matrix for final model predictions             |
+| `cv_results.png`             | Cross-validation score comparison across models          |
+| `knn_validation_curve.png`   | Accuracy vs. K values for KNN classifier                 |
+| `kmeans_elbow.png`           | Elbow method for finding optimal K in KMeans clustering  |
+
+### 🔍 Previews
+
+![Target Distribution](models/target_distribution_pie.png)
+![Correlation Heatmap](models/correlation_heatmap.png)
+![Alcohol vs Volatile Acidity](models/alcohol_vs_volatile.png)
+![Feature Importance](models/feature_importance.png)
+![Confusion Matrix](models/confusion_matrix.png)
+![CV Results](models/cv_results.png)
+![KNN Validation Curve](models/knn_validation_curve.png)
+![KMeans Elbow](models/kmeans_elbow.png)
+
+---
+
+## ⬇️ Download Visualizations
+
+Want to explore the visual insights used in this project?
+
+📦 [Click here to download all plots as ZIP](https://github.com/dattaBus-anls/-Professional-Wine-Quality-Classifier-/blob/main/models/wine_visualizations.zip?raw=true)
+
+---
+
+## 👨‍💻 Author
+
+**Apu Datta**  
+MSBA, Baruch College (CUNY)  
+[GitHub Repository](https://github.com/dattaBus-anls/-Professional-Wine-Quality-Classifier-.git)
+
+---
+
+## 📄 License
+
+Open for educational & academic use.

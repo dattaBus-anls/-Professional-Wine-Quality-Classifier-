@@ -275,7 +275,7 @@ def make_prediction(input_values, model, scaler, label_encoder, feature_names):
         
     except Exception as e:
         return None, None, False
-
+################################################################################
 def display_wine_metrics_professional(user_inputs, wine_type):
     """Professional metrics display using enhanced Streamlit components - Fixed for column nesting"""
     st.markdown('<div class="subsection-header">🔍 Wine Analysis Summary</div>', unsafe_allow_html=True)
@@ -427,15 +427,47 @@ if components_loaded:
     (model, scaler, label_encoder, feature_names, wine_type_encoder, 
      feature_ranges, dataset_stats, model_performance, _, _) = loading_result
     
-    # Success message
-    st.success("✅ All model components loaded successfully!")
-    
+
+    # Professional card style with author info
+    st.markdown("""
+    <div style="
+        background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+        border: 1px solid #28a745;
+        border-radius: 0.375rem;
+        padding: 0.75rem 1rem;
+        margin: 1rem 0;
+        display: flex;
+        align-items: center;
+    ">
+        <div style="
+            background: rgba(114, 47, 55, 0.1);
+            border: 1px solid #722F37;
+            border-radius: 6px;
+            padding: 0.5rem;
+            margin-right: 1rem;
+            text-align: center;
+            min-width: 120px;
+        ">
+            <div style="color: #722F37; font-weight: 700; font-size: 0.8rem; margin-bottom: 0.1rem;">
+                🎓 Apu Datta
+            </div>
+            <div style="color: #722F37; font-weight: 500; font-size: 0.7rem; line-height: 1.1;">
+                MSBA Student<br>
+                Baruch College (CUNY)
+            </div>
+        </div>
+        <div style="color: #155724; font-weight: 600; font-size: 2rem; flex: 1;">
+            🍷 Professional Wine Quality Classifier!
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
     # Create tabs with enhanced styling
     tab1, tab2 = st.tabs(["🍷 Wine Quality Prediction", "📊 Model Performance Dashboard"])
 
     with tab1:
         # Enhanced main header
-        st.markdown('<h1 class="main-header">🍷 Professional Wine Quality Classifier</h1>', unsafe_allow_html=True)
         
         # Dynamic information banner
         st.markdown(f"""
@@ -464,9 +496,65 @@ if components_loaded:
         """, unsafe_allow_html=True)
 
         # Enhanced sidebar
+        
         with st.sidebar:
-            st.markdown('<div class="section-header">🍷 Wine Properties Configuration</div>', unsafe_allow_html=True)
-            st.markdown("*Configure the wine's chemical and physical properties below*")
+            st.markdown('<div style="font-size: 1.1rem; color: #722F37; font-weight: 600; margin: 0.5rem 0; border-left: 3px solid #722F37; padding-left: 0.8rem;">🍷 Wine Properties Configuration</div>', unsafe_allow_html=True)
+            st.markdown('<div style="font-size: 0.8rem; color: #666; font-style: italic; margin: 0.2rem 0 0.5rem 0;">Configure wine\'s chemical & physical properties below</div>', unsafe_allow_html=True)
+
+            # Add model components status
+            st.markdown("---")
+            st.success("✅ All model loaded successfully!")
+            
+            # Show loaded components (existing code here)
+            st.markdown("**📦 Loaded Components:**")
+
+            # Create ultra-compact list
+            components_html = '<div style="margin-top: 0.2rem; line-height: 1.1;">'
+
+            if model is not None:
+                components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 🤖 ML Model</div>'
+            if scaler is not None:
+                components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• ⚖️ Scaler</div>'
+            if label_encoder is not None:
+                components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 🏷️ Label Encoder</div>'
+            if feature_names is not None:
+                components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 📋 Feature Names</div>'
+            if wine_type_encoder is not None:
+                components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 💖 Wine Type Encoder</div>'
+            if feature_ranges is not None:
+                components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 📊 Feature Ranges</div>'
+            if dataset_stats is not None:
+                components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 📈 Dataset Stats</div>'
+            if model_performance is not None:
+                components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 🎯 Model Performance</div>'
+
+            components_html += '</div>'
+
+            st.markdown(components_html, unsafe_allow_html=True)
+            
+            # ADD DATASET AND MODEL LINKS
+            st.markdown("---")
+            st.markdown("**🔗 Resources:**")            
+            # Dataset link
+            st.markdown("""
+            **📊 Dataset Source:**
+            - [Wine Quality Dataset - Kaggle](https://www.kaggle.com/datasets/rajyellow46/wine-quality)
+            """)
+            # Model/Code links
+            st.markdown("""
+            **🤖 GitHub:**
+            - [GitHub Repository](#)  <https://github.com/dattaBus-anls/-Professional-Wine-Quality-Classifier-.git>
+            """)
+            
+            # Model details
+            st.markdown(f"""
+            **📈 Model Details:**
+            - **Total Samples:** {dataset_stats['total_samples']:,}
+            - **Red Wines:** {dataset_stats['red_wines']:,}
+            - **White Wines:** {dataset_stats['white_wines']:,}
+            - **Best Algorithm:** {dataset_stats['best_model_name']}
+            """)
+            
             st.markdown("---")
 
         # Get wine type options from actual encoder
@@ -676,7 +764,7 @@ if components_loaded:
                             st.markdown("---")
                             display_wine_metrics_professional(user_inputs, wine_type)
                     else:
-                        st.error("❌ Prediction failed. Please check your inputs and try again.")
+                        st.error("❌ Prediction failed. Please check inputs and try again.")
                         st.info("Ensure all model files are properly generated from the training script.")
 
         # Enhanced model information section
@@ -783,7 +871,18 @@ if components_loaded:
 
     with tab2:
         # ENHANCED MODEL DASHBOARD TAB
-        st.markdown('<h1 class="main-header">📊 Comprehensive Model Performance Dashboard</h1>', unsafe_allow_html=True)
+        st.markdown("""
+        <h6 style="
+            font-size: 1.2rem; 
+            color: #722F37; 
+            font-weight: 600;
+            text-align: center; 
+            margin-top: 1rem;
+        ">
+        📊 Comprehensive Model Performance Dashboard
+        </h6>
+        """, unsafe_allow_html=True)
+
         
         if not (model_performance and dataset_stats):
             st.error("❌ Model performance data not available")
@@ -2075,7 +2174,7 @@ else:
     ```
     
     ### 📋 Troubleshooting:
-    - Ensure you have all required dependencies installed
+    - Ensure have all required dependencies installed
     - Check that the training script completed without errors
     - Verify all .pkl files were generated successfully
     - Make sure both scripts are in the same directory
