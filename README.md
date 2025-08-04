@@ -80,16 +80,21 @@ All visualizations are generated and saved in the `models/` folder during model 
 | `knn_validation_curve.png`   | Accuracy vs. K values for KNN classifier                 |
 | `kmeans_elbow.png`           | Elbow method for finding optimal K in KMeans clustering  |
 
-### 🔍 Previews
 
-![Target Distribution](models/target_distribution_pie.png)
-![Correlation Heatmap](models/correlation_heatmap.png)
-![Alcohol vs Volatile Acidity](models/alcohol_vs_volatile.png)
-![Feature Importance](models/feature_importance.png)
-![Confusion Matrix](models/confusion_matrix.png)
-![CV Results](models/cv_results.png)
-![KNN Validation Curve](models/knn_validation_curve.png)
-![KMeans Elbow](models/kmeans_elbow.png)
+## 🔍 Preview – Visual Insights
+
+| Target Distribution | Correlation Heatmap | Alcohol vs Volatile Acidity |
+|---------------------|---------------------|------------------------------|
+| ![Target Distribution](images/target_distribution_pie.png) | ![Correlation Heatmap](images/correlation_heatmap.png) | ![Alcohol vs Volatile](images/alcohol_vs_volatile.png) |
+
+| Feature Importance | Confusion Matrix | CV Results |
+|--------------------|------------------|------------|
+| ![Feature Importance](images/feature_importance.png) | ![Confusion Matrix](images/confusion_matrix.png) | ![CV Results](images/cv_results.png) |
+
+| KNN Validation Curve | KMeans Elbow |
+|----------------------|--------------|
+| ![KNN Validation](images/knn_validation_curve.png) | ![KMeans Elbow](images/kmeans_elbow.png) |
+
 
 ---
 
