@@ -67,7 +67,7 @@ streamlit run wine_streamlit_app.py
 
 ## 📸 Visualizations
 
-All visualizations are generated and saved in the `models/` folder during model training and evaluation.
+All visualizations are generated and saved in the `images/` folder during model training and evaluation.
 
 | 📂 File Name                  | 🧪 Description                                           |
 |------------------------------|----------------------------------------------------------|
@@ -98,13 +98,6 @@ All visualizations are generated and saved in the `models/` folder during model 
 
 ---
 
-## ⬇️ Download Visualizations
-
-Want to explore the visual insights used in this project?
-
-📦 [Click here to download all plots as ZIP](https://github.com/dattaBus-anls/-Professional-Wine-Quality-Classifier-/blob/main/models/wine_visualizations.zip?raw=true)
-
----
 
 ## 👨‍💻 Author
 
