@@ -32,123 +32,147 @@ import warnings
 import time
 import pickle
 import os
+from imblearn.over_sampling import SMOTE
+from sklearn.utils.class_weight import compute_class_weight
+
 warnings.filterwarnings('ignore')
 import shutil
 
 """# 2. Dataset Loading"""
 
 # Dataset Loading
+
+# Dataset Loading with Real Data Analysis
 print("Wine Quality Classification with Multiple Algorithms")
 print("="*60)
 
-# Method 1: Loading Wine Quality Dataset from Kaggle
-print("Loading Large Wine Quality dataset from Kaggle...")
-
 try:
-    # Option 1: Upload Combined Wine Dataset (RECOMMENDED - 6,497 samples)
-    from google.colab import files
-    print("LARGE DATASET OPTION - Combined Wine Quality (6,497 samples)")
-    print("Please download and upload from Kaggle:")
-    print("Visit: https://www.kaggle.com/datasets/rajyellow46/wine-quality")
-
-    uploaded = files.upload()
-
-    # Load the uploaded file
-    filename = list(uploaded.keys())[0]
-
-    if 'winequalityN' in filename or 'combined' in filename.lower():
-        # Combined dataset
-        df = pd.read_csv(filename)
-        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
-        print(f"✅ Combined dataset loaded: {filename}")
-
-    elif 'red' in filename.lower():
-        # Red wine only - we'll create larger dataset
-        df_red = pd.read_csv(filename, sep=';')
-        df_red['type'] = 'red'
-
-        # Ask for white wine file too
-        print("Red wine loaded. Please also upload white wine file for larger dataset:")
-        uploaded_white = files.upload()
-        white_filename = list(uploaded_white.keys())[0]
-        df_white = pd.read_csv(white_filename, sep=';')
-        df_white['type'] = 'white'
-
-        # Combine datasets
-        df = pd.concat([df_red, df_white], ignore_index=True)
-        print(f"✅ Combined red and white wine datasets!")
-
-    else:
-        # Single file
-        df = pd.read_csv(filename, sep=';')
-        df['type'] = 'wine'
-        print(f"✅ Dataset loaded: {filename}")
-
+    # Try to load the real winequalityN.csv dataset
+    df = pd.read_csv('winequalityN.csv')
+    
     # Standardize column names
-    if 'type' not in df.columns and 'wine_type' not in df.columns:
-        df['wine_type'] = 'red'  # Default if not specified
-    elif 'type' in df.columns:
+    if 'type' in df.columns:
         df['wine_type'] = df['type']
-
-    print(f"📊 LARGE DATASET LOADED SUCCESSFULLY!")
-    print(f"📈 Total samples: {len(df):,}")
-    print(f"🍷 Wine types: {df['wine_type'].value_counts().to_dict()}")
-
-except Exception as e:
-    print(f"Upload failed: {e}")
-    print("Creating LARGE realistic wine quality dataset for demonstration...")
-
-    # Create large realistic wine quality dataset (6,497 samples like real combined dataset)
-    np.random.seed(42)
-
-    # Red wine samples (1,599)
-    n_red = 1599
-    red_data = {
-        'fixed_acidity': np.clip(np.random.normal(8.32, 1.74, n_red), 4.6, 15.9),
-        'volatile_acidity': np.clip(np.random.normal(0.53, 0.18, n_red), 0.12, 1.58),
-        'citric_acid': np.clip(np.random.normal(0.27, 0.19, n_red), 0.0, 1.0),
-        'residual_sugar': np.clip(np.random.normal(2.54, 1.41, n_red), 0.9, 15.5),
-        'chlorides': np.clip(np.random.normal(0.087, 0.047, n_red), 0.012, 0.611),
-        'free_sulfur_dioxide': np.clip(np.random.normal(15.87, 10.46, n_red), 1, 72),
-        'total_sulfur_dioxide': np.clip(np.random.normal(46.47, 32.9, n_red), 6, 289),
-        'density': np.clip(np.random.normal(0.997, 0.002, n_red), 0.99007, 1.00369),
-        'pH': np.clip(np.random.normal(3.31, 0.15, n_red), 2.74, 4.01),
-        'sulphates': np.clip(np.random.normal(0.66, 0.17, n_red), 0.33, 2.0),
-        'alcohol': np.clip(np.random.normal(10.42, 1.07, n_red), 8.4, 14.9),
-        'wine_type': 'red'
-    }
-    red_quality_probs = [0.006, 0.033, 0.423, 0.399, 0.124, 0.015]  # For scores 3-8
-    red_data['quality'] = np.random.choice(range(3, 9), n_red, p=red_quality_probs)
-
-    # White wine samples (4,898)
-    n_white = 4898
-    white_data = {
-        'fixed_acidity': np.clip(np.random.normal(6.85, 0.84, n_white), 3.8, 14.2),
-        'volatile_acidity': np.clip(np.random.normal(0.28, 0.10, n_white), 0.08, 1.10),
-        'citric_acid': np.clip(np.random.normal(0.33, 0.12, n_white), 0.0, 1.66),
-        'residual_sugar': np.clip(np.random.normal(6.39, 5.07, n_white), 0.6, 65.8),
-        'chlorides': np.clip(np.random.normal(0.045, 0.022, n_white), 0.009, 0.346),
-        'free_sulfur_dioxide': np.clip(np.random.normal(35.31, 17.01, n_white), 2, 289),
-        'total_sulfur_dioxide': np.clip(np.random.normal(138.36, 42.50, n_white), 9, 440),
-        'density': np.clip(np.random.normal(0.994, 0.003, n_white), 0.98711, 1.03898),
-        'pH': np.clip(np.random.normal(3.19, 0.15, n_white), 2.72, 3.82),
-        'sulphates': np.clip(np.random.normal(0.49, 0.11, n_white), 0.22, 1.08),
-        'alcohol': np.clip(np.random.normal(10.51, 1.23, n_white), 8.0, 14.2),
-        'wine_type': 'white'
-    }
-    white_quality_probs = [0.005, 0.025, 0.174, 0.425, 0.307, 0.064]  # For scores 3-8
-    white_data['quality'] = np.random.choice(range(3, 9), n_white, p=white_quality_probs)
-
-    # Combine red and white wine data
-    red_df = pd.DataFrame(red_data)
-    white_df = pd.DataFrame(white_data)
-    df = pd.concat([red_df, white_df], ignore_index=True)
-
-    print("✅ LARGE realistic wine dataset created!")
+    elif 'wine_type' not in df.columns:
+        df['wine_type'] = 'red'  # Default if not specified
+    
+    print(f"✅ REAL KAGGLE DATASET LOADED!")
     print(f"📊 Total samples: {len(df):,}")
-    print(f"🍷 Red wines: {len(red_df):,}")
-    print(f"🍷 White wines: {len(white_df):,}")
-    print("Note: For actual submission, please use the real Kaggle dataset.")
+
+
+    df.columns = df.columns.str.replace(' ', '_').str.lower()
+    print("✅ Column names standardized to use underscores")
+    
+    print(f"🍷 Wine types: {df['wine_type'].value_counts().to_dict()}")
+    
+    # ANALYZE REAL DATA IMBALANCE
+    print("\n📊 REAL DATA QUALITY DISTRIBUTION:")
+    print("="*60)
+    real_quality_dist = df['quality'].value_counts().sort_index()
+    for quality, count in real_quality_dist.items():
+        percentage = count / len(df) * 100
+        print(f"Quality {quality}: {count:,} samples ({percentage:.1f}%)")
+
+except FileNotFoundError:
+    print("winequalityN.csv not found. Trying Google Colab upload...")
+    
+    try:
+        # Google Colab file upload
+        from google.colab import files
+        print("LARGE DATASET OPTION - Combined Wine Quality (6,497 samples)")
+        print("Please download and upload from Kaggle:")
+        print("Visit: https://www.kaggle.com/datasets/rajyellow46/wine-quality")
+
+        uploaded = files.upload()
+        filename = list(uploaded.keys())[0]
+
+        if 'winequalityN' in filename or 'combined' in filename.lower():
+            df = pd.read_csv(filename)
+            df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
+            print(f"✅ Combined dataset loaded: {filename}")
+
+        elif 'red' in filename.lower():
+            df_red = pd.read_csv(filename, sep=';')
+            df_red['type'] = 'red'
+            print("Red wine loaded. Please also upload white wine file for larger dataset:")
+            uploaded_white = files.upload()
+            white_filename = list(uploaded_white.keys())[0]
+            df_white = pd.read_csv(white_filename, sep=';')
+            df_white['type'] = 'white'
+            df = pd.concat([df_red, df_white], ignore_index=True)
+            print(f"✅ Combined red and white wine datasets!")
+
+        else:
+            df = pd.read_csv(filename, sep=';')
+            df['type'] = 'wine'
+            print(f"✅ Dataset loaded: {filename}")
+
+        # Standardize column names
+        if 'type' not in df.columns and 'wine_type' not in df.columns:
+            df['wine_type'] = 'red'
+        elif 'type' in df.columns:
+            df['wine_type'] = df['type']
+
+        print(f"📊 DATASET LOADED SUCCESSFULLY!")
+        print(f"📈 Total samples: {len(df):,}")
+        print(f"🍷 Wine types: {df['wine_type'].value_counts().to_dict()}")
+
+    except Exception as e:
+        print(f"Upload failed: {e}")
+        print("Creating BALANCED synthetic wine quality dataset...")
+
+        # Create BALANCED synthetic data (not imbalanced like before)
+        np.random.seed(42)
+
+        # BALANCED distributions instead of realistic imbalanced ones
+        n_red = 1599
+        balanced_red_probs = [0.15, 0.20, 0.30, 0.25, 0.08, 0.02]  # BALANCED - For scores 3-8
+
+        red_data = {
+            'fixed_acidity': np.clip(np.random.normal(8.32, 1.74, n_red), 4.6, 15.9),
+            'volatile_acidity': np.clip(np.random.normal(0.53, 0.18, n_red), 0.12, 1.58),
+            'citric_acid': np.clip(np.random.normal(0.27, 0.19, n_red), 0.0, 1.0),
+            'residual_sugar': np.clip(np.random.normal(2.54, 1.41, n_red), 0.9, 15.5),
+            'chlorides': np.clip(np.random.normal(0.087, 0.047, n_red), 0.012, 0.611),
+            'free_sulfur_dioxide': np.clip(np.random.normal(15.87, 10.46, n_red), 1, 72),
+            'total_sulfur_dioxide': np.clip(np.random.normal(46.47, 32.9, n_red), 6, 289),
+            'density': np.clip(np.random.normal(0.997, 0.002, n_red), 0.99007, 1.00369),
+            'pH': np.clip(np.random.normal(3.31, 0.15, n_red), 2.74, 4.01),
+            'sulphates': np.clip(np.random.normal(0.66, 0.17, n_red), 0.33, 2.0),
+            'alcohol': np.clip(np.random.normal(10.42, 1.07, n_red), 8.4, 14.9),
+            'wine_type': 'red'
+        }
+        red_data['quality'] = np.random.choice(range(3, 9), n_red, p=balanced_red_probs)
+
+        n_white = 4898
+        balanced_white_probs = [0.12, 0.18, 0.35, 0.25, 0.08, 0.02]  # BALANCED - For scores 3-8
+
+        white_data = {
+            'fixed_acidity': np.clip(np.random.normal(6.85, 0.84, n_white), 3.8, 14.2),
+            'volatile_acidity': np.clip(np.random.normal(0.28, 0.10, n_white), 0.08, 1.10),
+            'citric_acid': np.clip(np.random.normal(0.33, 0.12, n_white), 0.0, 1.66),
+            'residual_sugar': np.clip(np.random.normal(6.39, 5.07, n_white), 0.6, 65.8),
+            'chlorides': np.clip(np.random.normal(0.045, 0.022, n_white), 0.009, 0.346),
+            'free_sulfur_dioxide': np.clip(np.random.normal(35.31, 17.01, n_white), 2, 289),
+            'total_sulfur_dioxide': np.clip(np.random.normal(138.36, 42.50, n_white), 9, 440),
+            'density': np.clip(np.random.normal(0.994, 0.003, n_white), 0.98711, 1.03898),
+            'pH': np.clip(np.random.normal(3.19, 0.15, n_white), 2.72, 3.82),
+            'sulphates': np.clip(np.random.normal(0.49, 0.11, n_white), 0.22, 1.08),
+            'alcohol': np.clip(np.random.normal(10.51, 1.23, n_white), 8.0, 14.2),
+            'wine_type': 'white'
+        }
+        white_data['quality'] = np.random.choice(range(3, 9), n_white, p=balanced_white_probs)
+
+        # Combine red and white wine data
+        red_df = pd.DataFrame(red_data)
+        white_df = pd.DataFrame(white_data)
+        df = pd.concat([red_df, white_df], ignore_index=True)
+
+        print("✅ BALANCED synthetic wine dataset created!")
+        print(f"📊 Total samples: {len(df):,}")
+        print(f"🍷 Red wines: {len(red_df):,}")
+        print(f"🍷 White wines: {len(white_df):,}")
+        print("Note: This synthetic data is BALANCED for better model training.")
 
 """# 3. Exploring the dataset"""
 
@@ -187,6 +211,7 @@ df_imputed = df.copy()
 
 for col in ['fixed_acidity', 'volatile_acidity', 'citric_acid', 'residual_sugar',
             'chlorides', 'ph', 'sulphates']:
+
     df_imputed[col] = df.groupby('wine_type')[col].transform(lambda x: x.fillna(x.mean()))
 
 print("✅ Missing values after imputation:")
@@ -286,7 +311,9 @@ plt.xticks(rotation=45, ha='right', fontsize=8)
 plt.yticks(rotation=0, fontsize=8)
 plt.title('Feature Correlation Matrix', fontsize=14, fontweight='bold', pad=20)
 
-plt.savefig('models/correlation_heatmap.png', dpi=300, bbox_inches='tight', facecolor='white')
+os.makedirs('models', exist_ok=True)
+plt.savefig('correlation_heatmap.png', dpi=300, bbox_inches='tight', facecolor='white')
+
 print("✅ Saved: models/correlation_heatmap.png")
 
 # Visualization 3: Alcohol vs Volatile Acidity scatter plot
@@ -565,6 +592,64 @@ print(f"Scaled feature means: {np.mean(X_train_scaled, axis=0).round(3)}")
 print("="*60)
 print(f"Scaled feature stds: {np.std(X_train_scaled, axis=0).round(3)}")
 
+# ================================================================
+# STEP 4: CLASS DISTRIBUTION ANALYSIS AND BALANCING
+# ================================================================
+
+# CLASS DISTRIBUTION ANALYSIS AND BALANCING
+print("\n" + "="*60)
+print("CLASS DISTRIBUTION ANALYSIS AND BALANCING")
+print("="*60)
+
+# Analyze current class distribution
+class_counts = np.bincount(y_train)
+class_percentages = class_counts / len(y_train) * 100
+
+print("📊 TRAINING DATA CLASS DISTRIBUTION:")
+for i, (class_name, count, percentage) in enumerate(zip(label_encoder.classes_, class_counts, class_percentages)):
+    print(f"Class {i} ({class_name}): {count:,} samples ({percentage:.1f}%)")
+
+# Calculate imbalance ratio
+majority_class_pct = max(class_percentages)
+minority_class_pct = min(class_percentages)
+imbalance_ratio = majority_class_pct / minority_class_pct
+
+print(f"\n⚠️ IMBALANCE ANALYSIS:")
+print(f"   Majority class: {majority_class_pct:.1f}%")
+print(f"   Minority class: {minority_class_pct:.1f}%")
+print(f"   Imbalance ratio: {imbalance_ratio:.1f}:1")
+
+# Apply SMOTE if severely imbalanced
+if imbalance_ratio > 3:
+    print("🚨 SEVERE IMBALANCE DETECTED - Applying SMOTE")
+    print("-" * 40)
+    
+    # Apply SMOTE
+    smote = SMOTE(random_state=42, k_neighbors=3)
+    X_train_scaled_balanced, y_train_balanced = smote.fit_resample(X_train_scaled, y_train)
+    
+    print(f"✅ SMOTE Applied:")
+    print(f"   Before: {len(X_train_scaled)} samples")
+    print(f"   After: {len(X_train_scaled_balanced)} samples")
+    
+    # Show new distribution
+    new_class_counts = np.bincount(y_train_balanced)
+    print("\n📈 AFTER SMOTE BALANCING:")
+    for i, (class_name, count) in enumerate(zip(label_encoder.classes_, new_class_counts)):
+        percentage = count / len(y_train_balanced) * 100
+        print(f"Class {i} ({class_name}): {count:,} samples ({percentage:.1f}%)")
+    
+    # Update training data
+    X_train_scaled = X_train_scaled_balanced
+    y_train = y_train_balanced
+    
+    print("🎯 Training will now use BALANCED data!")
+    
+else:
+    print("✅ Acceptable class balance - No SMOTE needed")
+
+print("="*60)
+
 """# 10. Finding Optimal K for KNN"""
 
 k_range = np.arange(1, 31, 2)  # Testing odd numbers from 1 to 29
@@ -600,10 +685,6 @@ plt.axvline(x=optimal_k, color='green', linestyle='--', label=f'Optimal k = {opt
 plt.xlabel('Number of Neighbors (k)')
 plt.ylabel('Accuracy')
 plt.title('KNN Validation Curve: Finding Optimal k')
-
-# plt.legend()
-# plt.grid(True, alpha=0.3)
-# plt.show()
 
 plt.legend()
 plt.grid(True, alpha=0.3)
@@ -648,7 +729,36 @@ models = {
     )
 }
 
-print(f"Models to be evaluated:")
+# ================================================================
+# STEP 5: ADD BALANCED MODELS
+# ================================================================
+
+# ADD these balanced models to your existing models dictionary
+models.update({
+    'Logistic Regression (Balanced)': LogisticRegression(
+        random_state=42, max_iter=1000, class_weight='balanced'
+    ),
+    'Random Forest (Balanced)': RandomForestClassifier(
+        random_state=42, n_estimators=100, class_weight='balanced'
+    ),
+    'SVM RBF (Balanced)': SVC(
+        kernel='rbf', random_state=42, class_weight='balanced'
+    ),
+    'SVM Linear (Balanced)': SVC(
+        kernel='linear', random_state=42, class_weight='balanced'
+    ),
+    'Decision Tree (Balanced)': DecisionTreeClassifier(
+        random_state=42, class_weight='balanced'
+    )
+})
+
+print(f"\n🎯 TOTAL MODELS TO EVALUATE: {len(models)}")
+print("Models with balancing:")
+for name in models.keys():
+    if 'Balanced' in name:
+        print(f" - {name}")
+
+print(f"\nModels to be evaluated:")
 for name, model in models.items():
     print(f" - {name}")
 
@@ -688,11 +798,6 @@ plt.ylabel('Cross Validation Accuracy')
 plt.title('5-Fold Cross Validation Results')
 plt.xticks(range(len(model_names)), model_names, rotation=45, ha='right')
 
-
-# plt.grid(True, alpha=0.3)
-# plt.tight_layout()
-# plt.show()
-
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.savefig('models/cv_results.png', dpi=300, bbox_inches='tight', facecolor='white')
@@ -727,6 +832,44 @@ for name, model in models.items():
 
     print(f" Test Accuracy: {test_accuracy:.4f}")
     print("-" * 40)
+
+# ================================================================
+# STEP 6: PREDICTION DISTRIBUTION ANALYSIS
+# ================================================================
+
+# PREDICTION DISTRIBUTION ANALYSIS
+print("\n" + "="*60)
+print("PREDICTION DISTRIBUTION ANALYSIS")
+print("="*60)
+
+print("🎯 This analysis shows if models predict ALL classes or just 'Average':")
+print("-" * 60)
+
+for name, y_pred in predictions.items():
+    pred_counts = np.bincount(y_pred, minlength=len(label_encoder.classes_))
+    total_predictions = len(y_pred)
+    
+    print(f"\n📊 {name}:")
+    prediction_distribution = {}
+    
+    for i, (class_name, count) in enumerate(zip(label_encoder.classes_, pred_counts)):
+        percentage = count / total_predictions * 100 if total_predictions > 0 else 0
+        prediction_distribution[class_name] = percentage
+        print(f"   {class_name}: {count} predictions ({percentage:.1f}%)")
+    
+    # Check if model predicts all classes
+    min_prediction = min(prediction_distribution.values())
+    if min_prediction == 0:
+        print(f"   ⚠️ WARNING: This model never predicts some classes!")
+    elif min_prediction < 5:
+        print(f"   ⚠️ CAUTION: This model rarely predicts minority classes")
+    else:
+        print(f"   ✅ GOOD: This model predicts all classes!")
+
+print("\n" + "="*60)
+print("🎯 LOOK FOR MODELS THAT PREDICT ALL 3 CATEGORIES!")
+print("Models with 0% predictions for any category have the imbalance problem.")
+print("="*60)
 
 """# 15. Classification Reports for All Models"""
 
@@ -876,14 +1019,138 @@ kmeans_accuracy = accuracy_score(y_test, kmeans_predictions)
 
 print(f"K-Means clustering accuracy: {kmeans_accuracy:.4f}")
 
+
+"""# 19.5. Consensus-Based Model Selection Function (FIXED)"""
+
+def select_best_model_consensus(test_accuracies, predictions, y_test, label_encoder):
+    """Select model using consensus ranking approach - FIXED CLASS INDEX ASSUMPTIONS"""
+    
+    from sklearn.metrics import f1_score, recall_score, accuracy_score
+    
+    model_evaluation = {}
+    
+    # CREATE SAFE CLASS-TO-INDEX MAPPING
+    class_to_index = {cls: idx for idx, cls in enumerate(label_encoder.classes_)}
+    print(f"🔍 DEBUG: Class mapping = {class_to_index}")
+    
+    for model_name in test_accuracies.keys():
+        y_pred = predictions[model_name]
+        
+        # Calculate comprehensive metrics
+        accuracy = accuracy_score(y_test, y_pred)
+        macro_f1 = f1_score(y_test, y_pred, average='macro')
+        
+        # FIXED: Safe class-specific recalls using mapping
+        class_recalls = recall_score(y_test, y_pred, average=None)
+        
+        # Safe extraction using class names, not hardcoded indices
+        poor_recall = class_recalls[class_to_index['Poor']] if 'Poor' in class_to_index else 0
+        good_recall = class_recalls[class_to_index['Good']] if 'Good' in class_to_index else 0
+        average_recall = class_recalls[class_to_index['Average']] if 'Average' in class_to_index else 0
+        
+        min_recall = min(class_recalls)
+        
+        # Check if predicts all classes
+        unique_preds = len(np.unique(y_pred))
+        predicts_all = unique_preds == len(label_encoder.classes_)
+        
+        model_evaluation[model_name] = {
+            'accuracy': accuracy,
+            'macro_f1': macro_f1,
+            'poor_recall': poor_recall,
+            'good_recall': good_recall,
+            'average_recall': average_recall,
+            'min_recall': min_recall,
+            'predicts_all_classes': predicts_all
+        }
+    
+    # Consensus ranking
+    metrics_to_rank = ['accuracy', 'macro_f1', 'poor_recall', 'good_recall', 'min_recall']
+    model_ranks = {}
+    
+    for metric in metrics_to_rank:
+        # Sort models by this metric
+        sorted_models = sorted(
+            model_evaluation.items(),
+            key=lambda x: x[1][metric],
+            reverse=True
+        )
+        
+        # Assign ranks
+        for rank, (model_name, _) in enumerate(sorted_models):
+            if model_name not in model_ranks:
+                model_ranks[model_name] = {}
+            model_ranks[model_name][metric] = rank
+    
+    # Calculate total rank (lower is better)
+    for model_name in model_ranks:
+        # Only consider models that predict all classes
+        if model_evaluation[model_name]['predicts_all_classes']:
+            model_ranks[model_name]['total_rank'] = sum(model_ranks[model_name].values())
+        else:
+            model_ranks[model_name]['total_rank'] = 999  # Heavily penalize
+    
+    # Best model = lowest total rank
+    best_model = min(model_ranks, key=lambda x: model_ranks[x]['total_rank'])
+    
+    print(f"\n🎯 CONSENSUS-BASED MODEL SELECTION:")
+    print("=" * 50)
+    print(f"📊 Class Order: {list(label_encoder.classes_)}")
+    print(f"📊 Class Indices: {class_to_index}")
+    print("-" * 50)
+    
+    for model_name in sorted(model_ranks, key=lambda x: model_ranks[x]['total_rank'])[:5]:
+        rank_info = model_ranks[model_name]
+        eval_info = model_evaluation[model_name]
+        print(f"{model_name}:")
+        print(f"  Total Rank: {rank_info['total_rank']}")
+        print(f"  Accuracy: {eval_info['accuracy']:.3f}")
+        print(f"  Macro F1: {eval_info['macro_f1']:.3f}")
+        print(f"  Poor Recall: {eval_info['poor_recall']:.3f}")
+        print(f"  Good Recall: {eval_info['good_recall']:.3f}")
+        print(f"  Average Recall: {eval_info['average_recall']:.3f}")
+        print(f"  Predicts All Classes: {eval_info['predicts_all_classes']}")
+        print("-" * 30)
+    
+    return best_model
+
+
 """# 20. Best Model Analysis"""
 
 print("="*60)
 print("Best Model Analysis")
 print("="*60)
 
-# Find best performing model
-best_model_name = max(test_accuracies, key=test_accuracies.get)
+def select_best_reliable_model(test_accuracies):
+    """Select best model with preference for balanced versions"""
+    
+    # First, try to find the best balanced model
+    balanced_models = {name: acc for name, acc in test_accuracies.items() if 'Balanced' in name}
+    
+    if balanced_models:
+        best_balanced = max(balanced_models, key=balanced_models.get)
+        best_balanced_acc = balanced_models[best_balanced]
+        print(f"🎯 Best balanced model: {best_balanced} ({best_balanced_acc:.4f})")
+        
+        # Check if there's a regular version with same accuracy
+        regular_name = best_balanced.replace(' (Balanced)', '')
+        if regular_name in test_accuracies:
+            regular_acc = test_accuracies[regular_name]
+            print(f"📊 Regular version: {regular_name} ({regular_acc:.4f})")
+            
+            if abs(best_balanced_acc - regular_acc) < 0.001:  # Same accuracy
+                print(f"✅ Choosing balanced version for better fairness")
+                return best_balanced
+        
+        return best_balanced
+    
+    # Fallback to highest accuracy
+    return max(test_accuracies, key=test_accuracies.get)
+
+# NEW MODEL SELECTION
+best_model_name = select_best_reliable_model(test_accuracies)
+
+# KEEP everything else the same:
 best_accuracy = test_accuracies[best_model_name]
 
 print(f"Best performing model: {best_model_name}")
@@ -912,11 +1179,6 @@ sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
             yticklabels=label_encoder.classes_)
 plt.title(f'Confusion Matrix - {best_model_name}')
 
-
-# plt.xlabel('Predicted')
-# plt.ylabel('Actual')
-# plt.show()
-
 plt.xlabel('Predicted')
 plt.ylabel('Actual')
 plt.savefig('models/confusion_matrix.png', dpi=300, bbox_inches='tight', facecolor='white')
@@ -932,14 +1194,16 @@ print("="*60)
 print("Feature Importance Analysis...")
 
 # Get feature importance for Random Forest
-if 'Random Forest' in trained_models:
-    rf_model = trained_models['Random Forest']
+
+if best_model_name in trained_models and 'Random Forest' in best_model_name:
+    rf_model = trained_models[best_model_name]
+
     feature_importance = pd.DataFrame({
         'feature': X.columns,
         'importance': rf_model.feature_importances_
     }).sort_values('importance', ascending=False)
 
-    print("Random Forest Feature Importance:")
+    print(f"{best_model_name} Feature Importance:") 
     print(feature_importance)
 
     plt.figure(figsize=(10, 6))
@@ -1220,4 +1484,3 @@ else:
     print("\n❌ No PNG files found to download!")
 
 print("="*60)
-

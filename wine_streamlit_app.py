@@ -275,9 +275,9 @@ def make_prediction(input_values, model, scaler, label_encoder, feature_names):
         
     except Exception as e:
         return None, None, False
-################################################################################
+
 def display_wine_metrics_professional(user_inputs, wine_type):
-    """Professional metrics display using enhanced Streamlit components - Fixed for column nesting"""
+    """Professional metrics display using enhanced Streamlit components"""
     st.markdown('<div class="subsection-header">🔍 Wine Analysis Summary</div>', unsafe_allow_html=True)
     
     # Use expandable sections instead of nested columns to avoid nesting issues
@@ -344,6 +344,196 @@ def display_wine_metrics_professional(user_inputs, wine_type):
                 help="Wine preservative content"
             )
 
+def display_model_confidence(probabilities, label_encoder):
+    """Display model confidence with enhanced visualization"""
+    st.markdown('<div class="subsection-header">📊 Model Confidence Analysis</div>', unsafe_allow_html=True)
+    
+    conf_df = pd.DataFrame({
+        'Quality Level': label_encoder.classes_,
+        'Confidence': probabilities * 100
+    })
+    
+    # Enhanced confidence chart
+    color_map = {
+        'Poor': '#ff4b4b',
+        'Average': '#ff8f00', 
+        'Good': '#2e7d32'
+    }
+    
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        fig = px.bar(
+            conf_df, 
+            x='Quality Level', 
+            y='Confidence',
+            title="🎯 Model Confidence Distribution",
+            text='Confidence',
+            color='Quality Level',
+            color_discrete_map=color_map
+        )
+        
+        fig.update_traces(
+            texttemplate='%{text:.1f}%', 
+            textposition='outside',
+            textfont_size=12,
+            textfont_color='black'
+        )
+        
+        fig.update_layout(
+            showlegend=False, 
+            height=400,
+            margin=dict(l=20, r=20, t=50, b=20),
+            yaxis=dict(
+                title='Confidence (%)',
+                range=[0, max(conf_df['Confidence']) * 1.2],
+                showgrid=True, 
+                gridwidth=1, 
+                gridcolor='rgba(128,128,128,0.2)'
+            ),
+            xaxis=dict(
+                title='Quality Level',
+                showgrid=False
+            ),
+            title=dict(
+                text="🎯 Model Confidence Distribution",
+                x=0.5,
+                font=dict(size=16, color='#722F37')
+            ),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+    
+    with col2:
+        st.markdown("**🎯 Confidence Breakdown:**")
+        for _, row in conf_df.iterrows():
+            quality = row['Quality Level']
+            confidence = row['Confidence']
+            color = color_map.get(quality, '#666666')
+            
+            st.markdown(f"""
+            <div style="
+                background: linear-gradient(135deg, {color}15 0%, {color}05 100%);
+                border-left: 4px solid {color};
+                padding: 1rem;
+                margin: 0.5rem 0;
+                border-radius: 8px;
+            ">
+                <div style="font-weight: 600; color: {color};">{quality} Quality</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: {color};">{confidence:.1f}%</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+def display_model_info_performance(dataset_stats, model_performance):
+    """Display model information and performance in dashboard style"""
+    st.markdown('<div class="section-header">📋 Model Information & Performance Overview</div>', unsafe_allow_html=True)
+    
+    # Professional information cards
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="dashboard-header">
+                <span class="dashboard-icon">🤖</span>
+                <div class="dashboard-title">Selected Model</div>
+            </div>
+            <p><strong>Algorithm:</strong> {dataset_stats['best_model_name']}</p>
+            <p><strong>Type:</strong> {dataset_stats['best_model_type']}</p>
+            <p><strong>Test Accuracy:</strong> <span class="status-success">{dataset_stats['best_model_accuracy']:.1%}</span></p>
+            <p><strong>Features Used:</strong> {dataset_stats['feature_count']} properties</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        quality_dist = dataset_stats['quality_distribution']
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="dashboard-header">
+                <span class="dashboard-icon">📊</span>
+                <div class="dashboard-title">Training Dataset</div>
+            </div>
+            <p><strong>Total Samples:</strong> {dataset_stats['total_samples']:,}</p>
+            <p><strong>Red Wines:</strong> {dataset_stats['red_wines']:,}</p>
+            <p><strong>White Wines:</strong> {dataset_stats['white_wines']:,}</p>
+            <p><strong>Validation:</strong> 5-fold Cross-Validation</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col3:
+        st.markdown(f"""
+        <div class="metric-card">
+            <div class="dashboard-header">
+                <span class="dashboard-icon">🎯</span>
+                <div class="dashboard-title">Quality Classes</div>
+            </div>
+            <p><strong>Poor:</strong> {quality_dist.get('Poor', 0):,} samples</p>
+            <p><strong>Average:</strong> {quality_dist.get('Average', 0):,} samples</p>
+            <p><strong>Good:</strong> {quality_dist.get('Good', 0):,} samples</p>
+            <p><strong>Source:</strong> Kaggle Wine Quality Dataset</p>
+        </div>
+        """, unsafe_allow_html=True)
+
+def display_top_performing_models(model_performance):
+    """Display top performing models section"""
+    st.markdown('<div class="subsection-header">📈 Top Performing Models Ranking</div>', unsafe_allow_html=True)
+    
+    test_accs = model_performance['test_accuracies']
+    top_models = sorted(test_accs.items(), key=lambda x: x[1], reverse=True)[:8]
+    
+    perf_df = pd.DataFrame(top_models, columns=['Model', 'Test Accuracy'])
+    perf_df['Test Accuracy %'] = perf_df['Test Accuracy'].apply(lambda x: f"{x:.1%}")
+    perf_df['Rank'] = range(1, len(perf_df) + 1)
+    
+    # Reorder columns
+    perf_df_display = perf_df[['Rank', 'Model', 'Test Accuracy %']].copy()
+    
+    col1, col2 = st.columns([1, 1])
+    
+    with col1:
+        st.dataframe(
+            perf_df_display, 
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Rank": st.column_config.NumberColumn("🏆 Rank", width="small"),
+                "Model": st.column_config.TextColumn("🤖 Model Algorithm", width="large"),
+                "Test Accuracy %": st.column_config.TextColumn("📊 Accuracy", width="medium")
+            }
+        )
+    
+    with col2:
+        # Create performance comparison chart
+        fig = px.bar(
+            perf_df.head(6), 
+            x='Test Accuracy', 
+            y='Model',
+            orientation='h',
+            title="🏆 Top 6 Models Performance",
+            color='Test Accuracy',
+            color_continuous_scale='viridis'
+        )
+        
+        fig.update_traces(
+            texttemplate='%{x:.1%}', 
+            textposition='inside',
+            textfont_color='white'
+        )
+        
+        fig.update_layout(
+            height=400,
+            showlegend=False,
+            xaxis=dict(tickformat='.1%', title='Test Accuracy'),
+            yaxis=dict(title='Models'),
+            title_font=dict(size=14, color='#722F37'),
+            plot_bgcolor='rgba(248,249,250,0.8)',
+            paper_bgcolor='rgba(0,0,0,0)'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
 def get_safe_colors():
     """Return safe color palettes for charts to avoid Plotly color format errors"""
     return {
@@ -400,24 +590,6 @@ def create_safe_polar_chart(data_df, title, r_columns, theta_labels, name_column
     
     return fig
 
-def create_enhanced_dashboard_section(title, icon, content_func):
-    """Create enhanced dashboard sections with error handling"""
-    try:
-        st.markdown(f"""
-        <div class="dashboard-card">
-            <div class="dashboard-header">
-                <span class="dashboard-icon">{icon}</span>
-                <div class="dashboard-title">{title}</div>
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        content_func()
-        
-    except Exception as e:
-        st.error(f"❌ Error in {title}: {str(e)}")
-        st.info(f"Skipping {title} section. Other sections should still work.")
-
 # Load all components
 loading_result = load_model_components()
 components_loaded = loading_result[8]
@@ -427,7 +599,6 @@ if components_loaded:
     (model, scaler, label_encoder, feature_names, wine_type_encoder, 
      feature_ranges, dataset_stats, model_performance, _, _) = loading_result
     
-
     # Professional card style with author info
     st.markdown("""
     <div style="
@@ -462,14 +633,11 @@ if components_loaded:
     </div>
     """, unsafe_allow_html=True)
 
-
     # Create tabs with enhanced styling
     tab1, tab2 = st.tabs(["🍷 Wine Quality Prediction", "📊 Model Performance Dashboard"])
 
     with tab1:
         # Enhanced main header
-        
-        # Dynamic information banner
         st.markdown(f"""
         <div style="
             background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
@@ -496,7 +664,6 @@ if components_loaded:
         """, unsafe_allow_html=True)
 
         # Enhanced sidebar
-        
         with st.sidebar:
             st.markdown('<div style="font-size: 1.1rem; color: #722F37; font-weight: 600; margin: 0.5rem 0; border-left: 3px solid #722F37; padding-left: 0.8rem;">🍷 Wine Properties Configuration</div>', unsafe_allow_html=True)
             st.markdown('<div style="font-size: 0.8rem; color: #666; font-style: italic; margin: 0.2rem 0 0.5rem 0;">Configure wine\'s chemical & physical properties below</div>', unsafe_allow_html=True)
@@ -505,12 +672,9 @@ if components_loaded:
             st.markdown("---")
             st.success("✅ All model loaded successfully!")
             
-            # Show loaded components (existing code here)
+            # Show loaded components
             st.markdown("**📦 Loaded Components:**")
-
-            # Create ultra-compact list
             components_html = '<div style="margin-top: 0.2rem; line-height: 1.1;">'
-
             if model is not None:
                 components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 🤖 ML Model</div>'
             if scaler is not None:
@@ -527,12 +691,10 @@ if components_loaded:
                 components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 📈 Dataset Stats</div>'
             if model_performance is not None:
                 components_html += '<div style="margin: 0; padding: 0; font-size: 0.85rem;">• 🎯 Model Performance</div>'
-
             components_html += '</div>'
-
             st.markdown(components_html, unsafe_allow_html=True)
             
-            # ADD DATASET AND MODEL LINKS
+            # Dataset and model links
             st.markdown("---")
             st.markdown("**🔗 Resources:**")            
             # Dataset link
@@ -543,7 +705,7 @@ if components_loaded:
             # Model/Code links
             st.markdown("""
             **🤖 GitHub:**
-            - [GitHub Repository](#)  <https://github.com/dattaBus-anls/-Professional-Wine-Quality-Classifier-.git>
+            - [GitHub Repository](https://github.com/dattaBus-anls/-Professional-Wine-Quality-Classifier-.git)
             """)
             
             # Model details
@@ -695,153 +857,19 @@ if components_loaded:
                         </div>
                         """, unsafe_allow_html=True)
 
-                        # Enhanced confidence and metrics display
-                        if hasattr(model, 'predict_proba'):
-                            # Create two separate sections to avoid column nesting
-                            st.markdown("---")
-                            
-                            # Confidence section
-                            st.markdown('<div class="subsection-header">📊 Model Confidence</div>', unsafe_allow_html=True)
-                            
-                            conf_df = pd.DataFrame({
-                                'Quality Level': label_encoder.classes_,
-                                'Confidence': probabilities * 100
-                            })
-                            
-                            # Enhanced confidence chart
-                            color_map = {
-                                'Poor': '#ff4b4b',
-                                'Average': '#ff8f00', 
-                                'Good': '#2e7d32'
-                            }
-                            
-                            colors = [color_map.get(qual, '#cccccc') for qual in conf_df['Quality Level']]
-                            
-                            fig = px.bar(
-                                conf_df, 
-                                x='Quality Level', 
-                                y='Confidence',
-                                title="Model Confidence Distribution",
-                                text='Confidence',
-                                color='Quality Level',
-                                color_discrete_map=color_map
-                            )
-                            
-                            fig.update_traces(
-                                texttemplate='%{text:.1f}%', 
-                                textposition='outside',
-                                textfont_size=12,
-                                textfont_color='black'
-                            )
-                            
-                            fig.update_layout(
-                                showlegend=False, 
-                                height=350,
-                                margin=dict(l=20, r=20, t=50, b=20),
-                                yaxis=dict(
-                                    title='Confidence (%)',
-                                    range=[0, max(conf_df['Confidence']) * 1.2],
-                                    showgrid=True, 
-                                    gridwidth=1, 
-                                    gridcolor='rgba(128,128,128,0.2)'
-                                ),
-                                xaxis=dict(
-                                    title='Quality Level',
-                                    showgrid=False
-                                ),
-                                title=dict(
-                                    text="Model Confidence Distribution",
-                                    x=0.5,
-                                    font=dict(size=14, color='#722F37')
-                                ),
-                                plot_bgcolor='rgba(0,0,0,0)',
-                                paper_bgcolor='rgba(0,0,0,0)'
-                            )
-                            
-                            st.plotly_chart(fig, use_container_width=True)
-                            
-                            # Wine metrics section (separate from columns)
-                            st.markdown("---")
-                            display_wine_metrics_professional(user_inputs, wine_type)
+                        # Store prediction results in session state for dashboard access
+                        st.session_state.last_prediction = {
+                            'quality': quality,
+                            'probabilities': probabilities,
+                            'user_inputs': user_inputs.copy(),
+                            'wine_type': wine_type
+                        }
+                        
+                        st.success("✅ Prediction completed! Check the 📊 Model Performance Dashboard tab for detailed analysis.")
+                        
                     else:
                         st.error("❌ Prediction failed. Please check inputs and try again.")
                         st.info("Ensure all model files are properly generated from the training script.")
-
-        # Enhanced model information section
-        st.markdown("---")
-        st.markdown('<div class="section-header">📋 Model Information & Performance</div>', unsafe_allow_html=True)
-
-        # Professional information cards
-        col1, col2, col3 = st.columns(3)
-        
-        with col1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="dashboard-header">
-                    <span class="dashboard-icon">🤖</span>
-                    <div class="dashboard-title">Best Model</div>
-                </div>
-                <p><strong>Algorithm:</strong> {dataset_stats['best_model_name']}</p>
-                <p><strong>Type:</strong> {dataset_stats['best_model_type']}</p>
-                <p><strong>Accuracy:</strong> <span class="status-success">{dataset_stats['best_model_accuracy']:.1%}</span></p>
-                <p><strong>Features:</strong> {dataset_stats['feature_count']} properties</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col2:
-            quality_dist = dataset_stats['quality_distribution']
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="dashboard-header">
-                    <span class="dashboard-icon">📊</span>
-                    <div class="dashboard-title">Dataset Details</div>
-                </div>
-                <p><strong>Total Samples:</strong> {dataset_stats['total_samples']:,}</p>
-                <p><strong>Red Wines:</strong> {dataset_stats['red_wines']:,}</p>
-                <p><strong>White Wines:</strong> {dataset_stats['white_wines']:,}</p>
-                <p><strong>Validation:</strong> 5-fold Cross-Validation</p>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with col3:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="dashboard-header">
-                    <span class="dashboard-icon">🎯</span>
-                    <div class="dashboard-title">Quality Distribution</div>
-                </div>
-                <p><strong>Poor:</strong> {quality_dist.get('Poor', 0):,} samples</p>
-                <p><strong>Average:</strong> {quality_dist.get('Average', 0):,} samples</p>
-                <p><strong>Good:</strong> {quality_dist.get('Good', 0):,} samples</p>
-                <p><strong>Source:</strong> Kaggle Wine Quality Dataset</p>
-            </div>
-            """, unsafe_allow_html=True)
-
-        # Top performing models summary
-        if model_performance:
-            st.markdown("---")
-            st.markdown('<div class="subsection-header">📈 Top Performing Models</div>', unsafe_allow_html=True)
-            
-            test_accs = model_performance['test_accuracies']
-            top_models = sorted(test_accs.items(), key=lambda x: x[1], reverse=True)[:5]
-            
-            perf_df = pd.DataFrame(top_models, columns=['Model', 'Test Accuracy'])
-            perf_df['Test Accuracy'] = perf_df['Test Accuracy'].apply(lambda x: f"{x:.1%}")
-            perf_df['Rank'] = range(1, len(perf_df) + 1)
-            
-            # Reorder columns
-            perf_df = perf_df[['Rank', 'Model', 'Test Accuracy']]
-            
-            st.dataframe(
-                perf_df, 
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Rank": st.column_config.NumberColumn("🏆 Rank", width="small"),
-                    "Model": st.column_config.TextColumn("🤖 Model Algorithm", width="large"),
-                    "Test Accuracy": st.column_config.TextColumn("📊 Accuracy", width="medium")
-                }
-            )
 
         # Professional footer
         st.markdown("---")
@@ -872,36 +900,62 @@ if components_loaded:
     with tab2:
         # ENHANCED MODEL DASHBOARD TAB
         st.markdown("""
-        <h6 style="
-            font-size: 1.2rem; 
+        <h3 style="
+            font-size: 1.5rem; 
             color: #722F37; 
             font-weight: 600;
             text-align: center; 
             margin-top: 1rem;
+            margin-bottom: 2rem;
         ">
         📊 Comprehensive Model Performance Dashboard
-        </h6>
+        </h3>
         """, unsafe_allow_html=True)
 
-        
         if not (model_performance and dataset_stats):
             st.error("❌ Model performance data not available")
             st.info("Please ensure model training completed successfully and all .pkl files are present.")
             st.stop()
+
+        # MOVED SECTIONS FROM TAB 1 TO TAB 2
+
+        # 1. MODEL CONFIDENCE SECTION (if prediction exists)
+        if hasattr(st.session_state, 'last_prediction') and st.session_state.last_prediction:
+            st.markdown("---")
+            prediction_data = st.session_state.last_prediction
+            
+            if hasattr(model, 'predict_proba'):
+                display_model_confidence(prediction_data['probabilities'], label_encoder)
+            else:
+                st.info("Model confidence analysis requires a model with probability support.")
         
-        # Enhanced progress tracking
+        # 2. WINE ANALYSIS SUMMARY (if prediction exists)
+        if hasattr(st.session_state, 'last_prediction') and st.session_state.last_prediction:
+            st.markdown("---")
+            prediction_data = st.session_state.last_prediction
+            display_wine_metrics_professional(prediction_data['user_inputs'], prediction_data['wine_type'])
+        
+        # 3. MODEL INFORMATION & PERFORMANCE SECTION
+        st.markdown("---")
+        display_model_info_performance(dataset_stats, model_performance)
+        
+        # 4. TOP PERFORMING MODELS SECTION
+        st.markdown("---")
+        display_top_performing_models(model_performance)
+
+        # Enhanced progress tracking for remaining dashboard sections
         progress_container = st.container()
         with progress_container:
             progress_bar = st.progress(0)
             status_text = st.empty()
         
         try:
-            status_text.text("🔄 Loading dashboard components...")
-            progress_bar.progress(5)
+            status_text.text("🔄 Loading additional dashboard components...")
+            progress_bar.progress(20)
             
             # ENHANCED DASHBOARD OVERVIEW
             st.markdown("---")
-            st.markdown('<div class="section-header">📈 Performance Overview</div>', unsafe_allow_html=True)
+            st.markdown('<div class="section-header">📈 Training Performance Overview</div>', unsafe_allow_html=True)
             
             col1, col2, col3, col4 = st.columns(4)
             
@@ -940,79 +994,13 @@ if components_loaded:
                     help="Poor, Average, Good quality classifications"
                 )
 
-            progress_bar.progress(20)
-            status_text.text("📊 Generating performance comparisons...")
+            progress_bar.progress(40)
+            status_text.text("📊 Generating algorithm comparison...")
             
             # ENHANCED MODEL PERFORMANCE COMPARISON
-            def create_performance_section():
-                st.markdown("---")
-                st.markdown('<div class="section-header">🏆 Model Performance Comparison</div>', unsafe_allow_html=True)
-                
-                test_accs = model_performance['test_accuracies']
-                
-                # Limit to top 12 models for better visualization
-                if len(test_accs) > 12:
-                    sorted_models = sorted(test_accs.items(), key=lambda x: x[1], reverse=True)[:12]
-                    test_accs = dict(sorted_models)
-                    st.info("📊 Showing top 12 models for optimal visualization")
-                
-                performance_data = []
-                for model_name, accuracy in test_accs.items():
-                    # Shorten long model names for better display
-                    display_name = model_name[:30] + "..." if len(model_name) > 30 else model_name
-                    performance_data.append({
-                        'Model': display_name,
-                        'Full_Name': model_name,
-                        'Test_Accuracy': accuracy,
-                        'Model_Type': 'Best Model' if model_name == dataset_stats['best_model_name'] else 'Other Models'
-                    })
-                
-                perf_df = pd.DataFrame(performance_data)
-                perf_df = perf_df.sort_values('Test_Accuracy', ascending=True)
-                
-                # Enhanced horizontal bar chart
-                fig_performance = px.bar(
-                    perf_df, 
-                    x='Test_Accuracy', 
-                    y='Model',
-                    color='Model_Type',
-                    color_discrete_map={'Best Model': '#722F37', 'Other Models': '#cccccc'},
-                    title="🎯 Model Test Accuracy Comparison",
-                    labels={'Test_Accuracy': 'Test Accuracy (%)', 'Model': 'Machine Learning Models'},
-                    hover_data={'Full_Name': True, 'Test_Accuracy': ':.1%'}
-                )
-                
-                fig_performance.update_layout(
-                    height=600,
-                    showlegend=True,
-                    xaxis=dict(
-                        tickformat='.1%',
-                        title_font=dict(size=14, color='#722F37'),
-                        range=[0, 1]
-                    ),
-                    yaxis=dict(
-                        title_font=dict(size=14, color='#722F37')
-                    ),
-                    title=dict(
-                        font=dict(size=16, color='#722F37'),
-                        x=0.5
-                    ),
-                    plot_bgcolor='rgba(248,249,250,0.8)',
-                    paper_bgcolor='rgba(0,0,0,0)'
-                )
-                
-                fig_performance.update_traces(
-                    texttemplate='%{x:.1%}', 
-                    textposition='outside',
-                    textfont=dict(size=10, color='black')
-                )
-                
-                st.plotly_chart(fig_performance, use_container_width=True)
-            
-            # Model Performance Comparison
             try:
                 st.markdown("---")
-                st.markdown('<div class="section-header">🏆 Model Performance Comparison</div>', unsafe_allow_html=True)
+                st.markdown('<div class="section-header">🏆 Algorithm Performance Comparison</div>', unsafe_allow_html=True)
                 
                 test_accs = model_performance['test_accuracies']
                 
@@ -1079,88 +1067,10 @@ if components_loaded:
                 st.error(f"❌ Error in Model Performance Comparison: {str(e)}")
                 st.info("Skipping Model Performance Comparison section. Other sections should still work.")
             
-            progress_bar.progress(40)
+            progress_bar.progress(60)
             status_text.text("🔄 Processing cross-validation results...")
             
             # ENHANCED CROSS VALIDATION RESULTS
-            def create_cv_section():
-                st.markdown("---")
-                st.markdown('<div class="section-header">🔄 Cross-Validation Analysis (5-Fold)</div>', unsafe_allow_html=True)
-                
-                cv_scores = model_performance['cv_scores']
-                cv_data = []
-                
-                for model_name, scores in cv_scores.items():
-                    cv_data.append({
-                        'Model': model_name[:25] + "..." if len(model_name) > 25 else model_name,
-                        'Full_Name': model_name,
-                        'Mean_CV_Score': np.mean(scores),
-                        'Std_CV_Score': np.std(scores),
-                        'Min_Score': np.min(scores),
-                        'Max_Score': np.max(scores),
-                        'Scores': scores
-                    })
-                
-                cv_df = pd.DataFrame(cv_data)
-                cv_df = cv_df.sort_values('Mean_CV_Score', ascending=False)
-                
-                col1, col2 = st.columns([1.2, 1.8])
-                
-                with col1:
-                    st.markdown('<div class="subsection-header">📈 Top Cross-Validation Performers</div>', unsafe_allow_html=True)
-                    top_cv = cv_df.head(8).copy()  # Show top 8
-                    top_cv['CV Score'] = top_cv['Mean_CV_Score'].apply(lambda x: f"{x:.2%}")
-                    top_cv['Std Dev'] = top_cv['Std_CV_Score'].apply(lambda x: f"±{x:.3f}")
-                    top_cv['Range'] = top_cv.apply(lambda row: f"{row['Min_Score']:.3f} - {row['Max_Score']:.3f}", axis=1)
-                    
-                    display_df = top_cv[['Model', 'CV Score', 'Std Dev', 'Range']].copy()
-                    st.dataframe(
-                        display_df,
-                        use_container_width=True,
-                        hide_index=True,
-                        column_config={
-                            "Model": st.column_config.TextColumn("🤖 Model", width="medium"),
-                            "CV Score": st.column_config.TextColumn("📊 Score", width="small"),
-                            "Std Dev": st.column_config.TextColumn("📈 Std Dev", width="small"),
-                            "Range": st.column_config.TextColumn("📊 Range", width="medium")
-                        }
-                    )
-                
-                with col2:
-                    st.markdown('<div class="subsection-header">📊 CV Score Distribution Analysis</div>', unsafe_allow_html=True)
-                    
-                    # Enhanced box plot for CV scores
-                    top_5_models = cv_df.head(5)
-                    
-                    fig_cv = go.Figure()
-                    
-                    colors = ['#722F37', '#8b4513', '#a0522d', '#cd853f', '#daa520']
-                    
-                    for i, (_, row) in enumerate(top_5_models.iterrows()):
-                        fig_cv.add_trace(go.Box(
-                            y=row['Scores'],
-                            name=row['Model'],
-                            boxpoints='all',
-                            jitter=0.3,
-                            pointpos=-1.8,
-                            marker=dict(color=colors[i % len(colors)]),
-                            line=dict(color=colors[i % len(colors)])
-                        ))
-                    
-                    fig_cv.update_layout(
-                        title="🎯 Cross-Validation Score Distribution (Top 5 Models)",
-                        yaxis_title="Cross-Validation Score",
-                        xaxis_title="Models",
-                        height=400,
-                        showlegend=False,
-                        plot_bgcolor='rgba(248,249,250,0.8)',
-                        paper_bgcolor='rgba(0,0,0,0)',
-                        title_font=dict(size=14, color='#722F37')
-                    )
-                    
-                    st.plotly_chart(fig_cv, use_container_width=True)
-            
-            # Cross Validation Results
             try:
                 st.markdown("---")
                 st.markdown('<div class="section-header">🔄 Cross-Validation Analysis (5-Fold)</div>', unsafe_allow_html=True)
@@ -1242,107 +1152,10 @@ if components_loaded:
                 st.error(f"❌ Error in Cross-Validation Analysis: {str(e)}")
                 st.info("Skipping Cross-Validation Analysis section. Other sections should still work.")
             
-            progress_bar.progress(60)
+            progress_bar.progress(80)
             status_text.text("📊 Building detailed metrics analysis...")
             
             # ENHANCED DETAILED PERFORMANCE METRICS
-            def create_metrics_section():
-                st.markdown("---")
-                st.markdown('<div class="section-header">📊 Detailed Performance Metrics Analysis</div>', unsafe_allow_html=True)
-                
-                performance_metrics = model_performance['performance_metrics']
-                
-                # Create comprehensive metrics table
-                metrics_data = []
-                for model_name, metrics in performance_metrics.items():
-                    overall_score = (metrics['accuracy'] + metrics['precision'] + metrics['recall'] + metrics['f1_score']) / 4
-                    metrics_data.append({
-                        'Model': model_name[:25] + "..." if len(model_name) > 25 else model_name,
-                        'Full_Name': model_name,
-                        'Accuracy': metrics['accuracy'],
-                        'Precision': metrics['precision'],
-                        'Recall': metrics['recall'],
-                        'F1_Score': metrics['f1_score'],
-                        'Overall_Score': overall_score
-                    })
-                
-                metrics_df = pd.DataFrame(metrics_data)
-                metrics_df = metrics_df.sort_values('Overall_Score', ascending=False)
-                
-                # Format for display
-                display_metrics = metrics_df.copy()
-                for col in ['Accuracy', 'Precision', 'Recall', 'F1_Score', 'Overall_Score']:
-                    display_metrics[col] = display_metrics[col].apply(lambda x: f"{x:.1%}")
-                
-                st.dataframe(
-                    display_metrics[['Model', 'Accuracy', 'Precision', 'Recall', 'F1_Score', 'Overall_Score']],
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Model": st.column_config.TextColumn("🤖 Model Algorithm", width="large"),
-                        "Accuracy": st.column_config.TextColumn("🎯 Accuracy", width="small"),
-                        "Precision": st.column_config.TextColumn("📊 Precision", width="small"),
-                        "Recall": st.column_config.TextColumn("📈 Recall", width="small"),
-                        "F1_Score": st.column_config.TextColumn("⚖️ F1-Score", width="small"),
-                        "Overall_Score": st.column_config.TextColumn("🏆 Overall", width="small")
-                    }
-                )
-                
-                # Enhanced Performance Metrics Visualization
-                st.markdown('<div class="subsection-header">📊 Top Models Performance Visualization</div>', unsafe_allow_html=True)
-                
-                col1, col2 = st.columns(2)
-                
-                with col1:
-                    # Radar chart for top 3 models - SAFE VERSION
-                    top_3_models = metrics_df.head(3)
-                    
-                    fig_radar = create_safe_polar_chart(
-                        top_3_models, 
-                        "🎯 Performance Metrics Comparison (Top 3)",
-                        ['Accuracy', 'Precision', 'Recall', 'F1_Score'],
-                        ['Accuracy', 'Precision', 'Recall', 'F1-Score'],
-                        'Model'
-                    )
-                    
-                    st.plotly_chart(fig_radar, use_container_width=True)
-                
-                with col2:
-                    # Enhanced bar chart for metrics comparison
-                    top_5_models = metrics_df.head(5)
-                    
-                    metrics_viz_data = []
-                    for _, row in top_5_models.iterrows():
-                        for metric in ['Accuracy', 'Precision', 'Recall', 'F1_Score']:
-                            metrics_viz_data.append({
-                                'Model': row['Model'],
-                                'Metric': metric,
-                                'Score': row[metric]
-                            })
-                    
-                    metrics_viz_df = pd.DataFrame(metrics_viz_data)
-                    
-                    fig_metrics = px.bar(
-                        metrics_viz_df,
-                        x='Metric',
-                        y='Score',
-                        color='Model',
-                        barmode='group',
-                        title="📊 Detailed Metrics Comparison (Top 5)",
-                        labels={'Score': 'Performance Score', 'Metric': 'Performance Metrics'}
-                    )
-                    
-                    fig_metrics.update_layout(
-                        height=400,
-                        yaxis=dict(tickformat='.0%'),
-                        title_font=dict(size=14, color='#722F37'),
-                        plot_bgcolor='rgba(248,249,250,0.8)',
-                        paper_bgcolor='rgba(0,0,0,0)'
-                    )
-                    
-                    st.plotly_chart(fig_metrics, use_container_width=True)
-            
-            # Detailed Performance Metrics
             try:
                 st.markdown("---")
                 st.markdown('<div class="section-header">📊 Detailed Performance Metrics Analysis</div>', unsafe_allow_html=True)
@@ -1443,642 +1256,10 @@ if components_loaded:
                 st.error(f"❌ Error in Detailed Performance Metrics: {str(e)}")
                 st.info("Skipping Detailed Performance Metrics section. Other sections should still work.")
             
-            progress_bar.progress(75)
-            status_text.text("🔍 Analyzing classification reports...")
-            
-            # ENHANCED CLASSIFICATION REPORTS
-            def create_classification_section():
-                classification_reports = model_performance.get('classification_reports', {})
-                
-                if not classification_reports:
-                    st.warning("⚠️ Classification reports not available in model performance data")
-                    return
-                
-                st.markdown("---")
-                st.markdown('<div class="section-header">📋 Classification Reports & Analysis</div>', unsafe_allow_html=True)
-                
-                best_model_report = classification_reports.get(dataset_stats['best_model_name'])
-                
-                if best_model_report:
-                    st.markdown(f'<div class="subsection-header">🏆 Best Model Detailed Analysis: {dataset_stats["best_model_name"]}</div>', unsafe_allow_html=True)
-                    
-                    # Enhanced classification report display
-                    report_df = pd.DataFrame(best_model_report).transpose()
-                    
-                    # Clean up the DataFrame for better display
-                    if 'support' in report_df.columns:
-                        report_df['support'] = report_df['support'].apply(
-                            lambda x: int(x) if pd.notna(x) and isinstance(x, (int, float)) and not pd.isna(x) else str(x)
-                        )
-                    
-                    # Format numerical columns to percentages where appropriate
-                    for col in ['precision', 'recall', 'f1-score']:
-                        if col in report_df.columns:
-                            report_df[col] = report_df[col].apply(
-                                lambda x: f"{x:.1%}" if pd.notna(x) and isinstance(x, (int, float)) and x != 0 else str(x)
-                            )
-                    
-                    st.dataframe(
-                        report_df, 
-                        use_container_width=True,
-                        column_config={
-                            "precision": st.column_config.TextColumn("🎯 Precision", width="medium"),
-                            "recall": st.column_config.TextColumn("📊 Recall", width="medium"),
-                            "f1-score": st.column_config.TextColumn("⚖️ F1-Score", width="medium"),
-                            "support": st.column_config.TextColumn("📈 Support", width="medium")
-                        }
-                    )
-                    
-                    # Class-wise performance visualization
-                    if best_model_report:
-                        class_performance = []
-                        for class_name in label_encoder.classes_:
-                            if class_name in best_model_report:
-                                metrics = best_model_report[class_name]
-                                class_performance.append({
-                                    'Quality Class': class_name,
-                                    'Precision': metrics.get('precision', 0),
-                                    'Recall': metrics.get('recall', 0),
-                                    'F1-Score': metrics.get('f1-score', 0),
-                                    'Support': metrics.get('support', 0)
-                                })
-                        
-                        if class_performance:
-                            class_df = pd.DataFrame(class_performance)
-                            
-                            col1, col2 = st.columns(2)
-                            
-                            with col1:
-                                # Support distribution with enhanced styling
-                                fig_support = px.bar(
-                                    class_df,
-                                    x='Quality Class',
-                                    y='Support',
-                                    title="📊 Sample Distribution by Quality Class",
-                                    color='Quality Class',
-                                    color_discrete_map={
-                                        'Poor': '#ff4b4b',
-                                        'Average': '#ff8f00', 
-                                        'Good': '#2e7d32'
-                                    }
-                                )
-                                fig_support.update_layout(
-                                    height=400, 
-                                    showlegend=False,
-                                    title_font=dict(size=14, color='#722F37'),
-                                    plot_bgcolor='rgba(248,249,250,0.8)',
-                                    paper_bgcolor='rgba(0,0,0,0)'
-                                )
-                                fig_support.update_traces(
-                                    texttemplate='%{y}', 
-                                    textposition='outside'
-                                )
-                                st.plotly_chart(fig_support, use_container_width=True)
-                            
-                            with col2:
-                                # Performance metrics polar chart - SAFE VERSION
-                                colors = get_safe_colors()
-                                
-                                fig_polar = go.Figure()
-                                
-                                for i, (_, row) in enumerate(class_df.iterrows()):
-                                    quality_class = row['Quality Class']
-                                    
-                                    # Use predefined safe colors for quality classes
-                                    line_color = colors['quality_colors'].get(quality_class, '#666666')
-                                    fill_color = colors['quality_fill_colors'].get(quality_class, 'rgba(100,100,100,0.25)')
-                                    
-                                    fig_polar.add_trace(go.Scatterpolar(
-                                        r=[row['Precision'], row['Recall'], row['F1-Score']],
-                                        theta=['Precision', 'Recall', 'F1-Score'],
-                                        fill='toself',
-                                        name=f"{quality_class} Quality",
-                                        line=dict(color=line_color, width=2),
-                                        fillcolor=fill_color
-                                    ))
-                                
-                                fig_polar.update_layout(
-                                    polar=dict(
-                                        radialaxis=dict(
-                                            visible=True,
-                                            range=[0, 1],
-                                            tickformat='.0%'
-                                        )
-                                    ),
-                                    showlegend=True,
-                                    title="🎯 Class-wise Performance Analysis",
-                                    height=400,
-                                    title_font=dict(size=14, color='#722F37')
-                                )
-                                
-                                st.plotly_chart(fig_polar, use_container_width=True)
-            
-            # Classification Reports and Analysis
-            try:
-                classification_reports = model_performance.get('classification_reports', {})
-                
-                if not classification_reports:
-                    st.warning("⚠️ Classification reports not available in model performance data")
-                else:
-                    st.markdown("---")
-                    st.markdown('<div class="section-header">📋 Classification Reports & Analysis</div>', unsafe_allow_html=True)
-                    
-                    best_model_report = classification_reports.get(dataset_stats['best_model_name'])
-                    
-                    if best_model_report:
-                        st.markdown(f'<div class="subsection-header">🏆 Best Model Detailed Analysis: {dataset_stats["best_model_name"]}</div>', unsafe_allow_html=True)
-                        
-                        # Enhanced classification report display
-                        report_df = pd.DataFrame(best_model_report).transpose()
-                        
-                        # Clean up the DataFrame for better display
-                        if 'support' in report_df.columns:
-                            report_df['support'] = report_df['support'].apply(
-                                lambda x: int(x) if pd.notna(x) and isinstance(x, (int, float)) and not pd.isna(x) else str(x)
-                            )
-                        
-                        # Format numerical columns to percentages where appropriate
-                        for col in ['precision', 'recall', 'f1-score']:
-                            if col in report_df.columns:
-                                report_df[col] = report_df[col].apply(
-                                    lambda x: f"{x:.1%}" if pd.notna(x) and isinstance(x, (int, float)) and x != 0 else str(x)
-                                )
-                        
-                        st.dataframe(
-                            report_df, 
-                            use_container_width=True,
-                            column_config={
-                                "precision": st.column_config.TextColumn("🎯 Precision", width="medium"),
-                                "recall": st.column_config.TextColumn("📊 Recall", width="medium"),
-                                "f1-score": st.column_config.TextColumn("⚖️ F1-Score", width="medium"),
-                                "support": st.column_config.TextColumn("📈 Support", width="medium")
-                            }
-                        )
-                        
-                        # Class-wise performance visualization
-                        if best_model_report:
-                            class_performance = []
-                            for class_name in label_encoder.classes_:
-                                if class_name in best_model_report:
-                                    metrics = best_model_report[class_name]
-                                    class_performance.append({
-                                        'Quality Class': class_name,
-                                        'Precision': metrics.get('precision', 0),
-                                        'Recall': metrics.get('recall', 0),
-                                        'F1-Score': metrics.get('f1-score', 0),
-                                        'Support': metrics.get('support', 0)
-                                    })
-                            
-                            if class_performance:
-                                class_df = pd.DataFrame(class_performance)
-                                
-                                col1, col2 = st.columns(2)
-                                
-                                with col1:
-                                    # Support distribution with enhanced styling
-                                    fig_support = px.bar(
-                                        class_df,
-                                        x='Quality Class',
-                                        y='Support',
-                                        title="📊 Sample Distribution by Quality Class",
-                                        color='Quality Class',
-                                        color_discrete_map={
-                                            'Poor': '#ff4b4b',
-                                            'Average': '#ff8f00', 
-                                            'Good': '#2e7d32'
-                                        }
-                                    )
-                                    fig_support.update_layout(
-                                        height=400, 
-                                        showlegend=False,
-                                        title_font=dict(size=14, color='#722F37'),
-                                        plot_bgcolor='rgba(248,249,250,0.8)',
-                                        paper_bgcolor='rgba(0,0,0,0)'
-                                    )
-                                    fig_support.update_traces(
-                                        texttemplate='%{y}', 
-                                        textposition='outside'
-                                    )
-                                    st.plotly_chart(fig_support, use_container_width=True)
-                                
-                                with col2:
-                                    # Performance metrics polar chart - SAFE VERSION
-                                    colors = get_safe_colors()
-                                    
-                                    fig_polar = go.Figure()
-                                    
-                                    for i, (_, row) in enumerate(class_df.iterrows()):
-                                        quality_class = row['Quality Class']
-                                        
-                                        # Use predefined safe colors for quality classes
-                                        line_color = colors['quality_colors'].get(quality_class, '#666666')
-                                        fill_color = colors['quality_fill_colors'].get(quality_class, 'rgba(100,100,100,0.25)')
-                                        
-                                        fig_polar.add_trace(go.Scatterpolar(
-                                            r=[row['Precision'], row['Recall'], row['F1-Score']],
-                                            theta=['Precision', 'Recall', 'F1-Score'],
-                                            fill='toself',
-                                            name=f"{quality_class} Quality",
-                                            line=dict(color=line_color, width=2),
-                                            fillcolor=fill_color
-                                        ))
-                                    
-                                    fig_polar.update_layout(
-                                        polar=dict(
-                                            radialaxis=dict(
-                                                visible=True,
-                                                range=[0, 1],
-                                                tickformat='.0%'
-                                            )
-                                        ),
-                                        showlegend=True,
-                                        title="🎯 Class-wise Performance Analysis",
-                                        height=400,
-                                        title_font=dict(size=14, color='#722F37')
-                                    )
-                                    
-                                    st.plotly_chart(fig_polar, use_container_width=True)
-                        
-                        # F1-Score heatmap with error handling
-                        st.markdown("### 🎯 F1-Score Heatmap")
-
-                        try:
-                            # Get top 5 models by test accuracy
-                            test_accs = model_performance['test_accuracies']
-                            top_5_models = sorted(test_accs.items(), key=lambda x: x[1], reverse=True)[:5]
-                            
-                            comparison_data = []
-                            for model_name, _ in top_5_models:
-                                if model_name in classification_reports:
-                                    report = classification_reports[model_name]
-                                    
-                                    # Extract per-class metrics
-                                    for class_name in label_encoder.classes_:
-                                        if class_name in report:
-                                            class_metrics = report[class_name]
-                                            comparison_data.append({
-                                                'Model': model_name[:20] + "..." if len(model_name) > 20 else model_name,
-                                                'Class': class_name,
-                                                'Precision': class_metrics.get('precision', 0),
-                                                'Recall': class_metrics.get('recall', 0),
-                                                'F1-Score': class_metrics.get('f1-score', 0),
-                                                'Support': class_metrics.get('support', 0)
-                                            })
-                            
-                            if comparison_data:
-                                comparison_df = pd.DataFrame(comparison_data)
-                                
-                                # Create visualization for classification metrics
-                                col1, col2 = st.columns(2)
-                                
-                                with col1:
-                                    # Precision comparison
-                                    fig_precision = px.bar(
-                                        comparison_df,
-                                        x='Class',
-                                        y='Precision',
-                                        color='Model',
-                                        barmode='group',
-                                        title="Precision by Class and Model",
-                                        labels={'Precision': 'Precision Score'}
-                                    )
-                                    fig_precision.update_layout(height=400)
-                                    st.plotly_chart(fig_precision, use_container_width=True)
-                                
-                                with col2:
-                                    # Recall comparison
-                                    fig_recall = px.bar(
-                                        comparison_df,
-                                        x='Class',
-                                        y='Recall',
-                                        color='Model',
-                                        barmode='group',
-                                        title="Recall by Class and Model",
-                                        labels={'Recall': 'Recall Score'}
-                                    )
-                                    fig_recall.update_layout(height=400)
-                                    st.plotly_chart(fig_recall, use_container_width=True)
-                                
-                                # F1-Score summary table
-                                st.markdown("**📊 F1-Score Summary Table:**")
-                                f1_summary = comparison_df.groupby(['Model', 'Class'])['F1-Score'].mean().reset_index()
-                                st.dataframe(f1_summary, use_container_width=True, hide_index=True)
-                                
-                        except Exception as e:
-                            st.warning(f"Could not create detailed analysis: {str(e)}")
-                            st.info("Classification report loaded successfully but detailed analysis unavailable.")
-                            
-            except Exception as e:
-                st.error(f"❌ Error in Classification Analysis: {str(e)}")
-                st.info("Skipping Classification Analysis section. Other sections should still work.")
-            
-            progress_bar.progress(85)
-            status_text.text("🎯 Finalizing dashboard components...")
-            
-            # ENHANCED MODEL RELIABILITY ANALYSIS
-            def create_reliability_section():
-                st.markdown("---")
-                st.markdown('<div class="section-header">🎯 Model Reliability & Final Assessment</div>', unsafe_allow_html=True)
-                
-                classification_reports = model_performance.get('classification_reports', {})
-                best_model_report = classification_reports.get(dataset_stats['best_model_name'], {})
-                
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    if best_model_report and 'weighted avg' in best_model_report:
-                        weighted_avg = best_model_report['weighted avg']
-                        st.markdown(f"""
-                        <div class="metric-card">
-                            <div class="dashboard-header">
-                                <span class="dashboard-icon">🎯</span>
-                                <div class="dashboard-title">Weighted Average</div>
-                            </div>
-                            <p><strong>Precision:</strong> <span class="status-success">{weighted_avg.get('precision', 0):.1%}</span></p>
-                            <p><strong>Recall:</strong> <span class="status-success">{weighted_avg.get('recall', 0):.1%}</span></p>
-                            <p><strong>F1-Score:</strong> <span class="status-success">{weighted_avg.get('f1-score', 0):.1%}</span></p>
-                            <p><strong>Support:</strong> {weighted_avg.get('support', 0):,} samples</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown("""
-                        <div class="metric-card">
-                            <div class="dashboard-header">
-                                <span class="dashboard-icon">🎯</span>
-                                <div class="dashboard-title">Weighted Average</div>
-                            </div>
-                            <p><em>Data not available</em></p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                with col2:
-                    if best_model_report and 'macro avg' in best_model_report:
-                        macro_avg = best_model_report['macro avg']
-                        st.markdown(f"""
-                        <div class="metric-card">
-                            <div class="dashboard-header">
-                                <span class="dashboard-icon">📊</span>
-                                <div class="dashboard-title">Macro Average</div>
-                            </div>
-                            <p><strong>Precision:</strong> <span class="status-success">{macro_avg.get('precision', 0):.1%}</span></p>
-                            <p><strong>Recall:</strong> <span class="status-success">{macro_avg.get('recall', 0):.1%}</span></p>
-                            <p><strong>F1-Score:</strong> <span class="status-success">{macro_avg.get('f1-score', 0):.1%}</span></p>
-                            <p><strong>Support:</strong> {macro_avg.get('support', 0):,} samples</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown("""
-                        <div class="metric-card">
-                            <div class="dashboard-header">
-                                <span class="dashboard-icon">📊</span>
-                                <div class="dashboard-title">Macro Average</div>
-                            </div>
-                            <p><em>Data not available</em></p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                with col3:
-                    # Overall model assessment
-                    overall_score = 0
-                    quality_assessment = "Fair"
-                    recommendation = "Consider tuning"
-                    
-                    if best_model_report and 'weighted avg' in best_model_report:
-                        weighted_avg = best_model_report['weighted avg']
-                        overall_score = (
-                            weighted_avg.get('precision', 0) +
-                            weighted_avg.get('recall', 0) +
-                            weighted_avg.get('f1-score', 0)
-                        ) / 3
-                        
-                        if overall_score > 0.9:
-                            quality_assessment = "Excellent"
-                            recommendation = "Deploy immediately"
-                        elif overall_score > 0.8:
-                            quality_assessment = "Very Good"
-                            recommendation = "Deploy with confidence"
-                        elif overall_score > 0.7:
-                            quality_assessment = "Good"
-                            recommendation = "Deploy with monitoring"
-                        else:
-                            quality_assessment = "Fair"
-                            recommendation = "Consider tuning"
-                    
-                    status_class = "status-success" if overall_score > 0.75 else "status-warning" if overall_score > 0.6 else "status-error"
-                    
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <div class="dashboard-header">
-                            <span class="dashboard-icon">⭐</span>
-                            <div class="dashboard-title">Overall Assessment</div>
-                        </div>
-                        <p><strong>Model Score:</strong> <span class="{status_class}">{overall_score:.1%}</span></p>
-                        <p><strong>Quality:</strong> <span class="{status_class}">{quality_assessment}</span></p>
-                        <p><strong>Recommendation:</strong> {recommendation}</p>
-                        <p><strong>Confidence:</strong> High</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-            
-            # Model Reliability Analysis
-            try:
-                st.markdown("---")
-                st.markdown('<div class="section-header">🎯 Model Reliability & Final Assessment</div>', unsafe_allow_html=True)
-                
-                classification_reports = model_performance.get('classification_reports', {})
-                best_model_report = classification_reports.get(dataset_stats['best_model_name'], {})
-                
-                col1, col2, col3 = st.columns(3)
-                
-                with col1:
-                    if best_model_report and 'weighted avg' in best_model_report:
-                        weighted_avg = best_model_report['weighted avg']
-                        st.markdown(f"""
-                        <div class="metric-card">
-                            <div class="dashboard-header">
-                                <span class="dashboard-icon">🎯</span>
-                                <div class="dashboard-title">Weighted Average</div>
-                            </div>
-                            <p><strong>Precision:</strong> <span class="status-success">{weighted_avg.get('precision', 0):.1%}</span></p>
-                            <p><strong>Recall:</strong> <span class="status-success">{weighted_avg.get('recall', 0):.1%}</span></p>
-                            <p><strong>F1-Score:</strong> <span class="status-success">{weighted_avg.get('f1-score', 0):.1%}</span></p>
-                            <p><strong>Support:</strong> {weighted_avg.get('support', 0):,} samples</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown("""
-                        <div class="metric-card">
-                            <div class="dashboard-header">
-                                <span class="dashboard-icon">🎯</span>
-                                <div class="dashboard-title">Weighted Average</div>
-                            </div>
-                            <p><em>Data not available</em></p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                with col2:
-                    if best_model_report and 'macro avg' in best_model_report:
-                        macro_avg = best_model_report['macro avg']
-                        st.markdown(f"""
-                        <div class="metric-card">
-                            <div class="dashboard-header">
-                                <span class="dashboard-icon">📊</span>
-                                <div class="dashboard-title">Macro Average</div>
-                            </div>
-                            <p><strong>Precision:</strong> <span class="status-success">{macro_avg.get('precision', 0):.1%}</span></p>
-                            <p><strong>Recall:</strong> <span class="status-success">{macro_avg.get('recall', 0):.1%}</span></p>
-                            <p><strong>F1-Score:</strong> <span class="status-success">{macro_avg.get('f1-score', 0):.1%}</span></p>
-                            <p><strong>Support:</strong> {macro_avg.get('support', 0):,} samples</p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                    else:
-                        st.markdown("""
-                        <div class="metric-card">
-                            <div class="dashboard-header">
-                                <span class="dashboard-icon">📊</span>
-                                <div class="dashboard-title">Macro Average</div>
-                            </div>
-                            <p><em>Data not available</em></p>
-                        </div>
-                        """, unsafe_allow_html=True)
-                
-                with col3:
-                    # Overall model assessment
-                    overall_score = 0
-                    quality_assessment = "Fair"
-                    recommendation = "Consider tuning"
-                    
-                    if best_model_report and 'weighted avg' in best_model_report:
-                        weighted_avg = best_model_report['weighted avg']
-                        overall_score = (
-                            weighted_avg.get('precision', 0) +
-                            weighted_avg.get('recall', 0) +
-                            weighted_avg.get('f1-score', 0)
-                        ) / 3
-                        
-                        if overall_score > 0.9:
-                            quality_assessment = "Excellent"
-                            recommendation = "Deploy immediately"
-                        elif overall_score > 0.8:
-                            quality_assessment = "Very Good"
-                            recommendation = "Deploy with confidence"
-                        elif overall_score > 0.7:
-                            quality_assessment = "Good"
-                            recommendation = "Deploy with monitoring"
-                        else:
-                            quality_assessment = "Fair"
-                            recommendation = "Consider tuning"
-                    
-                    status_class = "status-success" if overall_score > 0.75 else "status-warning" if overall_score > 0.6 else "status-error"
-                    
-                    st.markdown(f"""
-                    <div class="metric-card">
-                        <div class="dashboard-header">
-                            <span class="dashboard-icon">⭐</span>
-                            <div class="dashboard-title">Overall Assessment</div>
-                        </div>
-                        <p><strong>Model Score:</strong> <span class="{status_class}">{overall_score:.1%}</span></p>
-                        <p><strong>Quality:</strong> <span class="{status_class}">{quality_assessment}</span></p>
-                        <p><strong>Recommendation:</strong> {recommendation}</p>
-                        <p><strong>Confidence:</strong> High</p>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-            except Exception as e:
-                st.error(f"❌ Error in Model Reliability Analysis: {str(e)}")
-                st.info("Skipping Model Reliability Analysis section. Other sections should still work.")
-            
-            progress_bar.progress(95)
-            status_text.text("📋 Generating final summary...")
-            
-            # ENHANCED FINAL MODEL SELECTION SUMMARY
-            st.markdown("---")
-            st.markdown('<div class="section-header">🏁 Final Model Selection & Deployment Summary</div>', unsafe_allow_html=True)
-            
-            test_accs = model_performance['test_accuracies']
-            
-            # Use Streamlit columns instead of complex HTML grid
-            st.markdown(f"### 🎯 Selected Model: **{dataset_stats['best_model_name']}**")
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.markdown("#### ✅ Why This Model Was Chosen:")
-                st.markdown(f"""
-                - **Highest test accuracy:** {dataset_stats['best_model_accuracy']:.1%}
-                - **Consistent cross-validation performance**
-                - **Balanced precision, recall, and F1-score**  
-                - **Optimal for wine quality classification**
-                """)
-            
-            with col2:
-                st.markdown("#### 📊 Model Characteristics:")
-                st.markdown(f"""
-                - **Type:** {dataset_stats['best_model_type']}
-                - **Training Samples:** {dataset_stats['total_samples']:,}
-                - **Features:** {dataset_stats['feature_count']} wine properties
-                - **Classes:** {len(dataset_stats['quality_distribution'])} quality levels
-                - **Validation:** 5-fold cross-validation
-                """)
-            
-            # Production readiness indicator
-            st.success("🚀 **Model Ready for Production Deployment**")
-            st.info("All components validated • Performance verified • Ready for wine quality predictions")
-            
-            # Enhanced dataset overview
-            st.markdown('<div class="subsection-header">📈 Training Dataset Overview</div>', unsafe_allow_html=True)
-            
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                red_wines = dataset_stats.get('red_wines', 0)
-                white_wines = dataset_stats.get('white_wines', 1)
-                ratio = red_wines / white_wines if white_wines > 0 else 0
-                
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="dashboard-header">
-                        <span class="dashboard-icon">🍷</span>
-                        <div class="dashboard-title">Wine Distribution</div>
-                    </div>
-                    <p><strong>Red Wines:</strong> {red_wines:,} samples</p>
-                    <p><strong>White Wines:</strong> {white_wines:,} samples</p>
-                    <p><strong>Total:</strong> {dataset_stats['total_samples']:,} samples</p>
-                    <p><strong>Red:White Ratio:</strong> {ratio:.2f}:1</p>
-                </div>
-                """, unsafe_allow_html=True)
-
-            with col2:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="dashboard-header">
-                        <span class="dashboard-icon">🎯</span>
-                        <div class="dashboard-title">Training Configuration</div>
-                    </div>
-                    <p><strong>Algorithm:</strong> {dataset_stats['best_model_type']}</p>
-                    <p><strong>Cross-Validation:</strong> 5-fold</p>
-                    <p><strong>Train/Test Split:</strong> 70/30</p>
-                    <p><strong>Random State:</strong> 42 (reproducible)</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            with col3:
-                st.markdown(f"""
-                <div class="metric-card">
-                    <div class="dashboard-header">
-                        <span class="dashboard-icon">📊</span>
-                        <div class="dashboard-title">Performance Summary</div>
-                    </div>
-                    <p><strong>Best Accuracy:</strong> <span class="status-success">{dataset_stats['best_model_accuracy']:.1%}</span></p>
-                    <p><strong>Models Tested:</strong> {len(test_accs)}</p>
-                    <p><strong>Features Used:</strong> {dataset_stats['feature_count']}</p>
-                    <p><strong>Data Source:</strong> Kaggle Wine Quality</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
             progress_bar.progress(100)
             status_text.text("✅ Dashboard loaded successfully!")
             
-            # Clean up progress indicators after a short delay
+            # Clean up progress indicators
             import time
             time.sleep(1)
             progress_bar.empty()
@@ -2115,14 +1296,6 @@ if components_loaded:
             status_text.empty()
             st.error(f"❌ Dashboard error: {dashboard_error}")
             st.info("Try refreshing the page or ensure all model files are properly generated from the training script.")
-            
-            # Provide debugging information
-            st.markdown("### 🔧 Dashboard Debugging Information:")
-            st.markdown(f"- **Dataset Stats Available:** {'✅' if dataset_stats else '❌'}")
-            st.markdown(f"- **Model Performance Available:** {'✅' if model_performance else '❌'}")
-            if dataset_stats:
-                st.markdown(f"- **Best Model:** {dataset_stats.get('best_model_name', 'Unknown')}")
-                st.markdown(f"- **Total Samples:** {dataset_stats.get('total_samples', 'Unknown'):,}")
 
 else:
     # Enhanced error handling section
